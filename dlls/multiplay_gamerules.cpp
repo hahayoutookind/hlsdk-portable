@@ -147,7 +147,7 @@ void CHalfLifeMultiplay::RefreshSkillData( void )
 	// override some values for multiplay.
 
 	// suitcharger
-	gSkillData.suitchargerCapacity = 30;
+	gSkillData.suitchargerCapacity = 15;
 
 	// Crowbar whack
 	gSkillData.plrDmgCrowbar = 25;
@@ -159,19 +159,19 @@ void CHalfLifeMultiplay::RefreshSkillData( void )
 	gSkillData.plrDmg357 = 50;
 
 	// MP5 Round
-	gSkillData.plrDmgMP5 = 12;
+	gSkillData.plrDmgMP5 = 8;
 
 	// M203 grenade
 	gSkillData.plrDmgM203Grenade = 100;
 
 	// Shotgun buckshot
-	gSkillData.plrDmgBuckshot = 20;// fewer pellets in deathmatch
+	gSkillData.plrDmgBuckshot = 15;// fewer pellets in deathmatch
 
 	// Crossbow
 	gSkillData.plrDmgCrossbowClient = 20;
 
 	// RPG
-	gSkillData.plrDmgRPG = 120;
+	gSkillData.plrDmgRPG = 80;
 
 	// Egon
 	gSkillData.plrDmgEgonWide = 20;
@@ -181,10 +181,10 @@ void CHalfLifeMultiplay::RefreshSkillData( void )
 	gSkillData.plrDmgHandGrenade = 100;
 
 	// Satchel Charge
-	gSkillData.plrDmgSatchel = 120;
+	gSkillData.plrDmgSatchel = 100;
 
 	// Tripmine
-	gSkillData.plrDmgTripmine = 150;
+	gSkillData.plrDmgTripmine = 100;
 
 	// hornet
 	gSkillData.plrDmgHornet = 10;
