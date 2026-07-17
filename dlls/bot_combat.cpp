@@ -22,77 +22,6 @@
 
 extern int f_Observer;  // flag to indicate if player is in observer mode
 
-// weapon firing delay based on skill (min and max delay for each weapon)
-float primary_fire_delay[WEAPON_SNARK+1][5][2] = {
-   // WEAPON_NONE - NOT USED
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_CROWBAR
-   {{0.0, 0.1}, {0.2, 0.3}, {0.3, 0.5}, {0.4, 0.6}, {0.6, 1.0}},
-   // WEAPON_GLOCK (9mm)
-   {{0.0, 0.1}, {0.1, 0.2}, {0.2, 0.3}, {0.3, 0.4}, {0.4, 0.5}},
-   // WEAPON_PYTHON (357)
-   {{0.0, 0.25}, {0.2, 0.5}, {0.4, 0.8}, {1.0, 1.3}, {1.5, 2.0}},
-   // WEAPON_MP5 (9mmAR)
-   {{0.0, 0.1}, {0.1, 0.3}, {0.3, 0.5}, {0.4, 0.6}, {0.5, 0.8}},
-   // WEAPON_CHAINGUN - NOT USED
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_CROSSBOW
-   {{0.0, 0.25}, {0.2, 0.4}, {0.5, 0.7}, {0.8, 1.0}, {1.0, 1.3}},
-   // WEAPON_SHOTGUN
-   {{0.0, 0.25}, {0.2, 0.5}, {0.4, 0.8}, {0.6, 1.2}, {0.8, 2.0}},
-   // WEAPON_RPG
-   {{1.0, 3.0}, {2.0, 4.0}, {3.0, 5.0}, {4.0, 6.0}, {5.0, 7.0}},
-   // WEAPON_GAUSS
-   {{0.0, 0.1}, {0.2, 0.3}, {0.3, 0.5}, {0.5, 0.8}, {1.0, 1.2}},
-   // WEAPON_EGON
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_HORNETGUN
-   {{0.0, 0.1}, {0.25, 0.4}, {0.4, 0.7}, {0.6, 1.0}, {1.0, 1.5}},
-   // WEAPON_HANDGRENADE
-   {{1.0, 1.4}, {1.4, 2.0}, {1.8, 2.6}, {2.0, 3.0}, {2.5, 3.8}},
-   // WEAPON_TRIPMINE
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_SATCHEL
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_SNARK
-   {{0.0, 0.1}, {0.1, 0.2}, {0.2, 0.5}, {0.5, 0.7}, {0.6, 1.0}},
-   };
-
-float secondary_fire_delay[WEAPON_SNARK+1][5][2] = {
-   // WEAPON_NONE - NOT USED
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_CROWBAR - Not applicable
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_GLOCK (9mm)
-   {{0.0, 0.1}, {0.0, 0.1}, {0.1, 0.2}, {0.1, 0.2}, {0.2, 0.4}},
-   // WEAPON_PYTHON (357)
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_MP5 (9mmAR)
-   {{0.0, 0.3}, {0.5, 0.8}, {0.7, 1.0}, {1.0, 1.6}, {1.4, 2.0}},
-   // WEAPON_CHAINGUN - NOT USED
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_CROSSBOW
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_SHOTGUN
-   {{0.0, 0.25}, {0.2, 0.5}, {0.4, 0.8}, {0.6, 1.2}, {0.8, 2.0}},
-   // WEAPON_RPG - Not applicable
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_GAUSS
-   {{0.2, 0.5}, {0.3, 0.7}, {0.5, 1.0}, {0.8, 1.5}, {1.0, 2.0}},
-   // WEAPON_EGON - Not applicable
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_HORNETGUN
-   {{0.0, 0.1}, {0.2, 0.3}, {0.3, 0.5}, {0.5, 0.8}, {0.7, 1.2}},
-   // WEAPON_HANDGRENADE - Not applicable
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_TRIPMINE - Not applicable
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_SATCHEL
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
-   // WEAPON_SNARK - Not applicable
-   {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}}
-   };   
-
 ammo_check_t ammo_check[] = {
    {"ammo_glockclip", "9mm", _9MM_MAX_CARRY},
    {"ammo_9mmclip", "9mm", _9MM_MAX_CARRY},
@@ -446,7 +375,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
          CONSIDER_WEAPON(WEAPON_GAUSS);
 
       if ((pev->weapons & (1<<WEAPON_SHOTGUN)) && (pev->waterlevel != 3) &&
-          (distance > 30) && (distance < 150) && (primary_ammo[WEAPON_SHOTGUN] > 0))
+          (distance < 200) && (primary_ammo[WEAPON_SHOTGUN] > 0))
          CONSIDER_WEAPON(WEAPON_SHOTGUN);
 
       if ((pev->weapons & (1<<WEAPON_PYTHON)) && (pev->waterlevel != 3) &&
@@ -458,7 +387,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
          CONSIDER_WEAPON(WEAPON_HORNETGUN);
 
       if ((pev->weapons & (1<<WEAPON_MP5)) && (pev->waterlevel != 3) &&
-          (distance < 250) && (primary_ammo[WEAPON_MP5] > 0))
+          (distance > 200) && (primary_ammo[WEAPON_MP5] > 0))
          CONSIDER_WEAPON(WEAPON_MP5);
 
       if ((pev->weapons & (1<<WEAPON_CROSSBOW)) && (distance > 100) &&
@@ -481,7 +410,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
    if (pev->weapons & (1<<WEAPON_CROWBAR))
    {
       // if close to enemy, use the crowbar
-      if (((distance <= 40) && (weapon_choice == 0)) ||
+      if (((distance <= 120) && (weapon_choice == 0)) ||
           (weapon_choice == WEAPON_CROWBAR))
       {
          new_weapon = weapon_ptr[WEAPON_CROWBAR];
@@ -490,12 +419,17 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
          if (m_pActiveItem != new_weapon)
             SelectItem("weapon_crowbar");  // select the crowbar
 
-         pev->button |= IN_ATTACK;  // use primary attack (whack! whack!)
+         if (distance <= 40)
+         {
+            pev->button |= IN_ATTACK;  // use primary attack (whack! whack!)
+         }
+         else
+         {
+            pev->button |= IN_ATTACK2;  // throw crowbar
+         }
 
          // set next time to "shoot"
-         f_shoot_time = gpGlobals->time + 0.3 + 
-            RANDOM_FLOAT(primary_fire_delay[WEAPON_CROWBAR][bot_skill][0],
-                         primary_fire_delay[WEAPON_CROWBAR][bot_skill][1]);
+         f_shoot_time = 0;
          return TRUE;
       }
    }
@@ -520,9 +454,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
          pev->button |= IN_ATTACK;  // use primary attack (boom!)
 
          // set next time to "shoot"
-         f_shoot_time = gpGlobals->time + 0.1 + 
-            RANDOM_FLOAT(primary_fire_delay[WEAPON_HANDGRENADE][bot_skill][0],
-                         primary_fire_delay[WEAPON_HANDGRENADE][bot_skill][1]);
+         f_shoot_time = 0;
          return TRUE;
 // BigGuy - END
       }
@@ -549,9 +481,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
          pev->button |= IN_ATTACK;  // use primary attack (eek! eek!)
 
          // set next time to "shoot"
-         f_shoot_time = gpGlobals->time + 0.1 + 
-            RANDOM_FLOAT(primary_fire_delay[WEAPON_SNARK][bot_skill][0],
-                         primary_fire_delay[WEAPON_SNARK][bot_skill][1]);
+         f_shoot_time = 0;
          return TRUE;
 // BigGuy - END
       }
@@ -574,7 +504,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
             pev->button |= IN_ATTACK;  // use primary attack (bang! bang!)
 
             // set next time to shoot
-            f_shoot_time = gpGlobals->time;
+            f_shoot_time = 0;
 
             return TRUE;
          }
@@ -595,48 +525,10 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
             if (m_pActiveItem != new_weapon)
                SelectItem("weapon_gauss");  // select the gauss gun
 
-            long use_secondary = RANDOM_LONG(1,100);
+            pev->button |= IN_ATTACK;  // use primary attack (bang! bang!)
 
-            // are we charging the gauss gun?
-            if (f_fire_gauss > 0)
-            {
-               // is it time to fire the charged gauss gun?
-               if (f_fire_gauss >= gpGlobals->time)
-               {
-                  // we DON'T set pev->button here to release the secondary
-                  // fire button which will fire the charged gauss gun
-
-                  f_fire_gauss = -1;  // -1 means not charging gauss gun
-
-                  // set next time to shoot
-                  f_shoot_time = gpGlobals->time + 1.0 +
-                     RANDOM_FLOAT(secondary_fire_delay[WEAPON_GAUSS][bot_skill][0],
-                                  secondary_fire_delay[WEAPON_GAUSS][bot_skill][1]);
-               }
-               else
-               {
-                  pev->button |= IN_ATTACK2;  // charge the gauss gun
-                  f_shoot_time = gpGlobals->time;  // keep charging
-               }
-            }
-            else if ((use_secondary <= 20) &&
-                     (primary_ammo[WEAPON_GAUSS] >= 10))
-            {
-               // release secondary fire in 0.5 seconds...
-               f_fire_gauss = gpGlobals->time + 0.5;
-
-               pev->button |= IN_ATTACK2;  // charge the gauss gun
-               f_shoot_time = gpGlobals->time; // keep charging
-            }
-            else
-            {
-               pev->button |= IN_ATTACK;  // use primary attack (bang! bang!)
-
-               // set next time to shoot
-               f_shoot_time = gpGlobals->time + 0.2 +
-                  RANDOM_FLOAT(primary_fire_delay[WEAPON_GAUSS][bot_skill][0],
-                               primary_fire_delay[WEAPON_GAUSS][bot_skill][1]);
-            }
+            // set next time to shoot
+            f_shoot_time = 0;
 
             return TRUE;
          }
@@ -647,7 +539,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
    if ((pev->weapons & (1<<WEAPON_SHOTGUN)) && (pev->waterlevel != 3))
    {
       // if close enough for good shotgun blasts...
-      if (((distance > 30) && (distance < 150) && (weapon_choice == 0)) ||
+      if (((distance > 20) && (distance < 200) && (weapon_choice == 0)) ||
           (weapon_choice == WEAPON_SHOTGUN))
       {
          new_weapon = weapon_ptr[WEAPON_SHOTGUN];
@@ -662,15 +554,13 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
             long use_secondary = RANDOM_LONG(1,100);
 
             // use secondary attack about 30% of the time
-            if ((use_secondary <= 30) && (primary_ammo[WEAPON_SHOTGUN] >= 2))
+            if ((distance > 40) && (primary_ammo[WEAPON_SHOTGUN] >= 2))
             {
 // BigGuy - START
                pev->button |= IN_ATTACK2;  // use secondary attack (bang! bang!)
 
                // set next time to shoot
-               f_shoot_time = gpGlobals->time + 1.5 +
-                  RANDOM_FLOAT(secondary_fire_delay[WEAPON_SHOTGUN][bot_skill][0],
-                               secondary_fire_delay[WEAPON_SHOTGUN][bot_skill][1]);
+               f_shoot_time = 0;
             }
 // BigGuy - END
             else
@@ -678,9 +568,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
                pev->button |= IN_ATTACK;  // use primary attack (bang! bang!)
 
                // set next time to shoot
-               f_shoot_time = gpGlobals->time + 0.75 +
-                  RANDOM_FLOAT(primary_fire_delay[WEAPON_SHOTGUN][bot_skill][0],
-                               primary_fire_delay[WEAPON_SHOTGUN][bot_skill][1]);
+               f_shoot_time = 0;
             }
 
             return TRUE;
@@ -692,7 +580,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
    if ((pev->weapons & (1<<WEAPON_PYTHON)) && (pev->waterlevel != 3))
    {
       // if close enough for 357 shot...
-      if (((distance > 30) && (distance < 700) && (weapon_choice == 0)) ||
+      if (((distance > 80) && (distance < 700) && (weapon_choice == 0)) ||
           (weapon_choice == WEAPON_PYTHON))
       {
          new_weapon = weapon_ptr[WEAPON_PYTHON];
@@ -707,10 +595,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
             pev->button |= IN_ATTACK;  // use primary attack (bang! bang!)
 
             // set next time to shoot
-            f_shoot_time = gpGlobals->time + 0.75 +
-               RANDOM_FLOAT(primary_fire_delay[WEAPON_PYTHON][bot_skill][0],
-                            primary_fire_delay[WEAPON_PYTHON][bot_skill][1]);
-
+            f_shoot_time = 0;
             return TRUE;
          }
       }
@@ -742,19 +627,14 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
                pev->button |= IN_ATTACK2;  // use secondary attack (buzz! buzz!)
 
                // set next time to shoot
-               f_shoot_time = gpGlobals->time + 0.1 +
-                  RANDOM_FLOAT(secondary_fire_delay[WEAPON_HORNETGUN][bot_skill][0],
-                               secondary_fire_delay[WEAPON_HORNETGUN][bot_skill][1]);
+               f_shoot_time = 0;
 // BigGuy - END
             }
             else
             {
                pev->button |= IN_ATTACK;  // use primary attack (buzz! buzz!)
 
-               // set next time to shoot
-               f_shoot_time = gpGlobals->time + 0.25 +
-                  RANDOM_FLOAT(primary_fire_delay[WEAPON_HORNETGUN][bot_skill][0],
-                               primary_fire_delay[WEAPON_HORNETGUN][bot_skill][1]);
+               f_shoot_time = 0;
             }
 
             return TRUE;
@@ -765,39 +645,6 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
    // if the bot is carrying the MP5 (can't use underwater)...
    if ((pev->weapons & (1<<WEAPON_MP5)) && (pev->waterlevel != 3))
    {
-      long use_secondary = RANDOM_LONG(1,100);
-
-      // use secondary attack about 10% of the time...
-      if (((distance > 300) && (distance < 600) &&
-           (weapon_choice == 0) && (use_secondary <= 10)) ||
-          ((weapon_choice == WEAPON_MP5) && (primary == FALSE)))
-      {
-         // at some point we need to fire upwards in the air slightly
-         // for long distance kills.  for right now, just fire the
-         // grenade at the poor sucker.
-
-// BigGuy - START
-         new_weapon = weapon_ptr[WEAPON_MP5];
-
-         // check if the bot has any ammo left for this weapon...
-         if (secondary_ammo[WEAPON_MP5] > 0)
-         {
-            // check if the bot isn't already using this item...
-            if (m_pActiveItem != new_weapon)
-               SelectItem("weapon_9mmAR");  // select the 9mmAR (MP5)
-
-            pev->button |= IN_ATTACK2;  // use secodnary attack (boom!)
-
-            // set next time to shoot
-            f_shoot_time = gpGlobals->time + 1.0 +
-               RANDOM_FLOAT(secondary_fire_delay[WEAPON_MP5][bot_skill][0],
-                            secondary_fire_delay[WEAPON_MP5][bot_skill][1]);
-
-            return TRUE;
-         }
-// BigGuy - END
-      }
-
       // if close enough for good MP5 shot...
       if (((distance < 250) && (weapon_choice == 0)) ||
           (weapon_choice == WEAPON_MP5))
@@ -814,10 +661,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
             pev->button |= IN_ATTACK;  // use primary attack (bang! bang!)
 
             // set next time to shoot
-            f_shoot_time = gpGlobals->time + 0.1 +
-               RANDOM_FLOAT(primary_fire_delay[WEAPON_MP5][bot_skill][0],
-                            primary_fire_delay[WEAPON_MP5][bot_skill][1]);
-
+            f_shoot_time = 0;
             return TRUE;
          }
       }
@@ -826,9 +670,12 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
    // if the bot is carrying the crossbow...
    if (pev->weapons & (1<<WEAPON_CROSSBOW))
    {
-      // if bot is not too close for crossbow and not too far...
-      if (((distance > 100) && (distance < 1000) && (weapon_choice == 0)) ||
-          (weapon_choice == WEAPON_CROSSBOW))
+      if (bot_skill < 3)
+         pev->button |= IN_ATTACK2;  // use secondary attack to zoom
+
+      // if bot is not too close for crossbow...
+      if (((distance > 250)) && (weapon_choice == 0))
+          (weapon_choice == WEAPON_CROSSBOW);
       {
          new_weapon = weapon_ptr[WEAPON_CROSSBOW];
 
@@ -842,10 +689,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
             pev->button |= IN_ATTACK;  // use primary attack (bang! bang!)
 
             // set next time to shoot
-            f_shoot_time = gpGlobals->time + 0.75 +
-               RANDOM_FLOAT(primary_fire_delay[WEAPON_CROSSBOW][bot_skill][0],
-                            primary_fire_delay[WEAPON_CROSSBOW][bot_skill][1]);
-
+            f_shoot_time = 0;
             return TRUE;
          }
       }
@@ -870,10 +714,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
             pev->button |= IN_ATTACK;  // use primary attack (bang! bang!)
 
             // set next time to shoot
-            f_shoot_time = gpGlobals->time + 1.5 +
-               RANDOM_FLOAT(primary_fire_delay[WEAPON_RPG][bot_skill][0],
-                            primary_fire_delay[WEAPON_RPG][bot_skill][1]);
-
+            f_shoot_time = 0;
             return TRUE;
          }
       }
@@ -904,9 +745,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
                pev->button |= IN_ATTACK2;  // use secondary attack (bang! bang!)
 
                // set next time to shoot
-               f_shoot_time = gpGlobals->time + 0.2 +
-                  RANDOM_FLOAT(secondary_fire_delay[WEAPON_GLOCK][bot_skill][0],
-                               secondary_fire_delay[WEAPON_GLOCK][bot_skill][1]);
+               f_shoot_time = 0;
 // BigGuy - END
             }
             else
@@ -914,9 +753,7 @@ BOOL CBot::BotFireWeapon( Vector v_enemy_origin, int weapon_choice, BOOL primary
                pev->button |= IN_ATTACK;  // use primary attack (bang! bang!)
 
                // set next time to shoot
-               f_shoot_time = gpGlobals->time + 0.3 +
-                  RANDOM_FLOAT(primary_fire_delay[WEAPON_GLOCK][bot_skill][0],
-                               primary_fire_delay[WEAPON_GLOCK][bot_skill][1]);
+               f_shoot_time = 0;
             }
 
             return TRUE;
@@ -972,12 +809,23 @@ void CBot::BotShootAtEnemy( void )
    pev->v_angle.x += pitch_delta;
    pev->v_angle.y += yaw_delta;
 
-   float shake_yaw = 0.3f;
-   if (bot_skill == 1) shake_yaw = 2.0f;
+   float shake_yaw = 0.0f;
+   if (bot_skill == 3) shake_yaw = 2.0f;
    else if (bot_skill == 2) shake_yaw = 1.0f;
-   else if (bot_skill == 3) shake_yaw = 0.3f;
+   else if (bot_skill == 1) shake_yaw = 0.3f;
+   else if (bot_skill == 4) shake_yaw = 3.0f;
+   else shake_yaw = 5.0f;
 
-   pev->v_angle.y += RANDOM_FLOAT(-shake_yaw, shake_yaw);
+   pev->ideal_yaw += RANDOM_FLOAT(-shake_yaw, shake_yaw);
+
+   float shake_pitch = 0.0f;
+   if (bot_skill == 3) shake_pitch = 0.3f;
+   else if (bot_skill == 2) shake_pitch = 0.2f;
+   else if (bot_skill == 1) shake_pitch = 0.1f;
+   else if (bot_skill == 4) shake_pitch = 0.5f;
+   else shake_pitch = 1.0f;
+
+   pev->idealpitch += RANDOM_FLOAT(-shake_pitch, shake_pitch);
 
    // is it time to shoot yet?
    if (f_shoot_time <= gpGlobals->time)

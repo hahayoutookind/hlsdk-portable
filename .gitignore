@@ -29,6 +29,7 @@ CMakeSettings.json
 CMakeFiles
 CMakeCache.txt
 Makefile
+.lock*
 
 # Android Studio/Gradle
 .gradle/

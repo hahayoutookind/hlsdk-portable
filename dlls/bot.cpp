@@ -82,9 +82,6 @@ const char *bot_names[MAX_NAMES] = {
    "Maestro", "amigo", "mama gorda", "LAUGHTER", "Appalon"
 };
 
-// how often (out of 1000 times) the bot will pause, based on bot skill
-float pause_frequency[5] = {4, 7, 10, 15, 20};
-
 // how long the bot will delay when paused, based on bot skill
 float pause_time[5][2] = {
    {0.2, 0.5}, {0.5, 1.0}, {0.7, 1.3}, {1.0, 1.7}, {1.2, 2.0}};
@@ -617,7 +614,7 @@ float CBot::BotChangeYaw( float speed )
    if (current < -180)
       current += 360;
 
-   pev->v_angle.y = current;
+   pev->ideal_yaw = current;
 
    return speed;  // return number of degrees turned
 }
@@ -631,33 +628,33 @@ void CBot::BotOnLadder( float moved_distance )
 
    if (ladder_dir == LADDER_UP)  // is the bot currently going up?
    {
-      pev->v_angle.x = -60;  // look upwards
+      pev->idealpitch = -60;  // look upwards
 
       // check if the bot hasn't moved much since the last location...
       if (moved_distance <= 1)
       {
          // the bot must be stuck, change directions...
 
-         pev->v_angle.x = 60;  // look downwards
+         pev->idealpitch = 60;  // look downwards
          ladder_dir = LADDER_DOWN;
       }
    }
    else if (ladder_dir == LADDER_DOWN)  // is the bot currently going down?
    {
-      pev->v_angle.x = 60;  // look downwards
+      pev->idealpitch = 60;  // look downwards
 
       // check if the bot hasn't moved much since the last location...
       if (moved_distance <= 1)
       {
          // the bot must be stuck, change directions...
 
-         pev->v_angle.x = -60;  // look upwards
+         pev->idealpitch = -60;  // look upwards
          ladder_dir = LADDER_UP;
       }
    }
    else  // the bot hasn't picked a direction yet, try going up...
    {
-      pev->v_angle.x = -60;  // look upwards
+      pev->idealpitch = -60;  // look upwards
       ladder_dir = LADDER_UP;
    }
 
@@ -678,7 +675,7 @@ void CBot::BotUnderWater( void )
    int contents;
 
    // swim up towards the surface
-   pev->v_angle.x = -60;  // look upwards
+   pev->idealpitch = -60;  // look upwards
 
    // move forward (i.e. in the direction the bot is looking, up or down)
    pev->button |= IN_FORWARD;
@@ -1128,10 +1125,10 @@ void CBot::BotFindItem( void )
    {
       // let's head off toward that item...
       Vector v_item = pickup_origin - pev->origin;
-
       Vector bot_angles = UTIL_VecToAngles( v_item );
 
       pev->ideal_yaw = bot_angles.y;
+      pev->idealpitch = bot_angles.x;
 
       // check for wrap around of angle...
       if (pev->ideal_yaw > 180)
@@ -1171,7 +1168,7 @@ void CBot::BotUseLift( float moved_distance )
       // bot doesn't have to set f_find_item since the bot
       // should already be facing away from the button
 
-      f_move_speed = f_max_speed;
+      f_move_speed = 0;
    }
 
    // check if lift has started moving...
@@ -1250,7 +1247,7 @@ void CBot::BotUseLift( float moved_distance )
 
       BotChangeYaw( pev->yaw_speed );
 
-      f_move_speed = f_max_speed;
+      f_move_speed = 0;
    }
 }
 
@@ -1336,15 +1333,9 @@ void CBot::BotTurnAtWall( TraceResult *tr )
    if (pev->ideal_yaw < -180)
       pev->ideal_yaw += 360;
 
-   f_move_speed = 0;  // don't move while turning
+   f_move_speed = 0;  // move while turning
 }
-
-
-BOOL CBot::BotCantMoveForward( TraceResult *tr )
-{
-   // use some TraceLines to determine if anything is blocking the current
-   // path of the bot.
-
+BOOL CBot::BotCantMoveForward( TraceResult *tr ) {
    Vector v_src, v_forward;
 
    UTIL_MakeVectors( pev->v_angle );
@@ -1621,6 +1612,7 @@ BOOL CBot::BotFollowUser( void )
 
    pev->v_angle.x = 0;  // reset pitch to 0 (level horizontally)
    pev->v_angle.z = 0;  // reset roll to 0 (straight up and down)
+   pev->idealpitch = 0;  // reset camera's ideal pitch to 0
 
    if (!pBotUser->IsAlive( ))
    {
@@ -1653,12 +1645,17 @@ BOOL CBot::BotFollowUser( void )
 
       f_distance = v_user.Length( );  // how far away is the "user"?
 
-      if (f_distance > 200)      // run if distance to enemy is far
+      BOOL b_MovingBack = FALSE;
+
+      if (f_distance > 200 && b_MovingBack == FALSE)      // run if distance to enemy is far
          f_move_speed = f_max_speed;
-      else if (f_distance > 50)  // walk if distance is closer
-         f_move_speed = f_max_speed / 2;
-      else                     // don't move if close enough
-         f_move_speed = 0.0;
+      else
+         // hahayoutookind: move back for a few units if we were too close
+         b_MovingBack = TRUE;
+         f_move_speed = -f_max_speed;
+
+      if (f_distance > 500 && b_MovingBack == FALSE)
+         b_MovingBack = FALSE;
 
       return TRUE;
    }
@@ -1798,7 +1795,7 @@ void CBot::BotThink( void )
    if (degrees_turned >= pev->yaw_speed)
    {
       // if bot is still turning, turn in place by setting speed to 0
-      f_move_speed = 0;
+      f_move_speed = 0;  // move while turning
    }
 
    else if (IsOnLadder( ))  // check if the bot is on a ladder...
@@ -1829,7 +1826,8 @@ void CBot::BotThink( void )
          // and down, to make it appear that the bot is hunting for
          // something (don't do anything right now)
 
-         f_move_speed = 0;
+         f_move_speed = f_max_speed;  // move while turning
+
       }
 
       // is bot being "used" and can still follow "user"?
@@ -1839,18 +1837,18 @@ void CBot::BotThink( void )
          ;
       }
 
-      else
+      else  // no enemy, let's just wander around...
       {
-         // no enemy, let's just wander around...
+         pev->v_angle.x = 0;
+         pev->v_angle.z = 0;
 
-         pev->v_angle.x = 0;  // reset pitch to 0 (level horizontally)
-         pev->v_angle.z = 0;  // reset roll to 0 (straight up and down)
+         pev->idealpitch = 0;
 
          // check if bot should look for items now or not...
          if (f_find_item < gpGlobals->time)
-         {
             BotFindItem( );  // see if there are any visible items
-         }
+         else //if not, reset pitch
+            pev->idealpitch = 0;
 
          // check if bot sees a tripmine...
          if (b_see_tripmine)
@@ -1885,7 +1883,7 @@ void CBot::BotThink( void )
 
                b_see_tripmine = FALSE;
 
-               f_move_speed = 0;  // don't run while turning
+               f_move_speed = 0;  // don't move while shooting
             }
          }
 
@@ -1965,7 +1963,7 @@ void CBot::BotThink( void )
                   if (pev->ideal_yaw < -180)
                      pev->ideal_yaw += 360;
 
-                  f_move_speed = 0;  // don't move while turning
+                  f_move_speed = 0;  // move while turning
                   f_dont_avoid_wall_time = gpGlobals->time + 1.0;
                }
 
@@ -1990,7 +1988,7 @@ void CBot::BotThink( void )
                   if (pev->ideal_yaw < -180)
                      pev->ideal_yaw += 360;
 
-                  f_move_speed = 0;  // don't move while turning
+                  f_move_speed = 0;  // move while turning
                   f_dont_avoid_wall_time = gpGlobals->time + 1.0;
                }
 
@@ -2009,10 +2007,9 @@ void CBot::BotThink( void )
             }
 
             // check if the bot hasn't moved much since the last location
-            else if ((moved_distance <= 1) && (!bot_was_paused))
+            if (moved_distance <= 1 && (!bot_was_paused) && (!b_lift_moving) && (!b_see_tripmine))
             {
                // the bot must be stuck!
-            
                if (BotCanJumpUp( ))  // can the bot jump onto something?
                {
                   pev->button |= IN_JUMP;  // jump up and move forward
@@ -2023,7 +2020,7 @@ void CBot::BotThink( void )
                }
                else
                {
-                  f_move_speed = 0;  // don't move while turning
+                  f_move_speed = f_max_speed;  // move while turning
 
                   // turn randomly between 30 and 60 degress
                   if (wander_dir == WANDER_LEFT)
@@ -2045,17 +2042,6 @@ void CBot::BotThink( void )
                      f_find_item = gpGlobals->time + 0.5;
                   }
                }
-            }
-
-            // should the bot pause for a while here?
-            if ((RANDOM_LONG(1, 1000) <= pause_frequency[bot_skill]) &&
-                (pBotUser == NULL))  // don't pause if being "used"
-            {
-               // set the time that the bot will stop "pausing"
-               f_pause_time = gpGlobals->time +
-                  RANDOM_FLOAT(pause_time[bot_skill][0],
-                               pause_time[bot_skill][1]);
-               f_move_speed = 0;  // don't move while turning
             }
          }
       }
