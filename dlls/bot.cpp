@@ -619,10 +619,6 @@ float CBot::BotChangeYaw( float speed )
 
    pev->v_angle.y = current;
 
-   pev->angles.x = 0;
-   pev->angles.y = pev->v_angle.y;
-   pev->angles.z = 0;
-
    return speed;  // return number of degrees turned
 }
 
@@ -1602,10 +1598,6 @@ BOOL CBot::BotShootTripmine( void )
 
    pev->v_angle = UTIL_VecToAngles( v_enemy );
 
-   pev->angles.x = 0;
-   pev->angles.y = pev->v_angle.y;
-   pev->angles.z = 0;
-
    pev->ideal_yaw = pev->v_angle.y;
 
    // check for wrap around of angle...
@@ -1629,10 +1621,6 @@ BOOL CBot::BotFollowUser( void )
 
    pev->v_angle.x = 0;  // reset pitch to 0 (level horizontally)
    pev->v_angle.z = 0;  // reset roll to 0 (straight up and down)
-
-   pev->angles.x = 0;
-   pev->angles.y = pev->v_angle.y;
-   pev->angles.z = 0;
 
    if (!pBotUser->IsAlive( ))
    {
@@ -1857,10 +1845,6 @@ void CBot::BotThink( void )
 
          pev->v_angle.x = 0;  // reset pitch to 0 (level horizontally)
          pev->v_angle.z = 0;  // reset roll to 0 (straight up and down)
-
-         pev->angles.x = 0;
-         pev->angles.y = pev->v_angle.y;
-         pev->angles.z = 0;
 
          // check if bot should look for items now or not...
          if (f_find_item < gpGlobals->time)

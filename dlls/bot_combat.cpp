@@ -939,6 +939,7 @@ void CBot::BotShootAtEnemy( void )
    Vector target_angles = UTIL_VecToAngles( v_enemy );
 
    pev->ideal_yaw = target_angles.y;
+   pev->idealpitch = target_angles.x;
 
    // check for wrap around of angle...
    if (pev->ideal_yaw > 180)
@@ -946,25 +947,37 @@ void CBot::BotShootAtEnemy( void )
    if (pev->ideal_yaw < -180)
       pev->ideal_yaw += 360;
 
-   target_angles.x = -target_angles.x;  //adjust pitch to point gun
+   target_angles.x = -target_angles.x;  // pitch
 
-   float max_pitch_step = 10.0f;
    float pitch_delta = target_angles.x - pev->v_angle.x;
-   if (pitch_delta > max_pitch_step) pitch_delta = max_pitch_step;
+   while (pitch_delta > 180.0f)  pitch_delta -= 360.0f;
+   while (pitch_delta < -180.0f) pitch_delta += 360.0f;
+
+   float max_pitch_step = 20.0f;
+   if (pitch_delta > max_pitch_step)  pitch_delta = max_pitch_step;
    if (pitch_delta < -max_pitch_step) pitch_delta = -max_pitch_step;
+
    pev->v_angle.x += pitch_delta;
 
-   float shake = 0.5f;
-   if (bot_skill == 1) shake = 5.0f;
-   else if (bot_skill == 2) shake = 2.0f;
-   else if (bot_skill == 3) shake = 0.5f;
+   pev->v_angle.x += pitch_delta;
 
-   pev->v_angle.x += RANDOM_FLOAT(-shake, shake);
-   pev->v_angle.y += RANDOM_FLOAT(-shake, shake);
+   float yaw_delta = target_angles.y - pev->v_angle.y;
+   while (yaw_delta > 180.0f)  yaw_delta -= 360.0f;
+   while (yaw_delta < -180.0f) yaw_delta += 360.0f;
 
-   pev->angles.x = 0;
-   pev->angles.y = pev->v_angle.y;
-   pev->angles.z = 0;
+   float max_yaw_step   = 10.0f;
+   if (yaw_delta > max_yaw_step)  yaw_delta = max_yaw_step;
+   if (yaw_delta < -max_yaw_step) yaw_delta = -max_yaw_step;
+
+   pev->v_angle.x += pitch_delta;
+   pev->v_angle.y += yaw_delta;
+
+   float shake_yaw = 0.3f;
+   if (bot_skill == 1) shake_yaw = 2.0f;
+   else if (bot_skill == 2) shake_yaw = 1.0f;
+   else if (bot_skill == 3) shake_yaw = 0.3f;
+
+   pev->v_angle.y += RANDOM_FLOAT(-shake_yaw, shake_yaw);
 
    // is it time to shoot yet?
    if (f_shoot_time <= gpGlobals->time)

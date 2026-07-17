@@ -50,8 +50,6 @@ void CBotCam::Spawn( void )
 
    UTIL_SetOrigin(pev, tr.vecEndPos);
 
-   pev->angles = m_pBot->pev->v_angle;
-
    pev->fixangle = TRUE;
 
    SET_VIEW (m_pPlayer->edict(), edict());
@@ -91,8 +89,6 @@ void CBotCam::IdleThink( void )
                      dont_ignore_monsters, m_pBot->edict(), &tr );
 
       UTIL_SetOrigin(pev, tr.vecEndPos);
-
-      pev->angles = m_pBot->pev->v_angle;
 
       pev->fixangle = TRUE;
 
