@@ -25,6 +25,7 @@
 #include	"animation.h"
 #include	"doors.h"
 #include	"byteswap.h"
+#include	"testhull.h"
 
 #define	HULL_STEP_SIZE 16// how far the test hull moves on each step
 #define	NODE_HEIGHT	8	// how high to lift nodes off the ground after we drop them all (make stair/ramp mapping easier)
@@ -1481,20 +1482,6 @@ int CGraph::RejectInlineLinks( CLink *pLinkPool, FILE *file )
 // TestHull is a modelless clip hull that verifies reachable
 // nodes by walking from every node to each of it's connections
 //=========================================================
-class CTestHull : public CBaseMonster
-{
-public:
-	void Spawn( entvars_t *pevMasterNode );
-	virtual int ObjectCaps( void ) { return CBaseMonster :: ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
-	void EXPORT CallBuildNodeGraph ( void );
-	void BuildNodeGraph( void );
-	void EXPORT ShowBadNode( void );
-	void EXPORT DropDelay( void );
-	void EXPORT PathFind( void );
-
-	Vector vecBadNodeOrigin;
-};
-
 LINK_ENTITY_TO_CLASS( testhull, CTestHull )
 
 //=========================================================

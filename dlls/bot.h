@@ -5,6 +5,8 @@
 // bot.h
 //
 
+#include "nodes.h"
+
 #ifndef BOT_H
 #define BOT_H
 
@@ -80,6 +82,13 @@ typedef struct  // used to respawn bot at end of round (time/frag limit)
 #define USE_TEAMPLAY_LATER_SND "barney/seeya.wav"
 #define USE_TEAMPLAY_ENEMY_SND "barney/ba_raincheck.wav"
 
+enum BotNavMode
+{
+    NAV_NONE = 0,
+    NAV_ITEM,
+    NAV_ENEMY,
+    NAV_WANDER
+};
 
 void BotDebug( char *buffer );  // print out message to HUD for debugging
 
@@ -87,6 +96,25 @@ void BotDebug( char *buffer );  // print out message to HUD for debugging
 class CBot : public CBasePlayer //Derive a bot class from CBasePlayer
 {
    public:
+      bool  m_bUseNodeNav;
+      int   m_iNavPath[MAX_PATH_SIZE];
+      int   m_iNavPathLen;
+      int   m_iNavPathIndex;
+      Vector m_vecNavGoal;
+      BotNavMode m_NavMode;
+      int    m_iPrevNode;
+      int    m_iRecentNodePos;
+      int    m_iRecentNodes[4];
+
+      bool BotCanUseNodeGraph( void );
+      bool BotBuildNodeRoute( const Vector &goal );
+      bool BotFollowNodeRoute( void );
+      void BotClearNodeRoute( void );
+      bool BotSetNavGoal( const Vector &goal, BotNavMode mode );
+      bool BotPickRandomNodeGoal( void );
+      bool BotIsRecentNode( int node );
+      bool BotPickWanderNode();
+
       Vector v_prev_origin;   // previous origin (i.e. location)
       float  f_shoot_time;    // next time to shoot weapon at
       float  f_max_speed;     // last sv_maxspeed setting

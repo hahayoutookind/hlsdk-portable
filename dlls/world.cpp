@@ -33,6 +33,7 @@
 #include "weapons.h"
 #include "gamerules.h"
 #include "teamplay_gamerules.h"
+#include "testhull.h"
 
 extern CGraph WorldGraph;
 extern CSoundEnt *pSoundEnt;
@@ -592,6 +593,9 @@ void CWorld::Precache( void )
 			// couldn't load, so alloc and prepare to build a graph.
 			ALERT( at_console, "*Error opening .NOD file\n" );
 			WorldGraph.AllocNodes();
+
+			CTestHull testhull;
+			testhull.BuildNodeGraph();
 		}
 		else
 		{

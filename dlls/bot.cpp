@@ -17,6 +17,8 @@
 #include "gamerules.h"
 #include "animation.h"
 
+#include "nodes.h"
+
 #include "bot.h"
 
 #include <sys/types.h>
@@ -301,6 +303,17 @@ void BotCreate(const char *skin, const char *name, const char *skill)
 
 void CBot::Spawn( )
 {
+   // Node graph specific things
+   m_bUseNodeNav = true;
+   m_iNavPathLen = 0;
+   m_iNavPathIndex = 0;
+   m_NavMode = NAV_NONE;
+   m_vecNavGoal = g_vecZero;
+   m_iPrevNode = -1;
+   m_iRecentNodePos = 0;
+   for (int i = 0; i < 4; i++)
+       m_iRecentNodes[i] = -1;
+
    char c_skill[2];
    char c_index[3];
 
@@ -396,9 +409,177 @@ void CBot::Spawn( )
    pBotPickupItem = NULL;
 }
 
+// Node graph navigation
+bool CBot::BotCanUseNodeGraph( void )
+{
+   return (WorldGraph.m_fGraphPresent &&
+           WorldGraph.m_pNodes != NULL &&
+           WorldGraph.m_cNodes > 0);
+}
 
-int CBot::TakeDamage( entvars_t *pevInflictor, entvars_t *pevAttacker,
-                      float flDamage, int bitsDamageType )
+void CBot::BotClearNodeRoute( void )
+{
+   m_iNavPathLen = 0;
+   m_iNavPathIndex = 0;
+   m_NavMode = NAV_NONE;
+}
+
+bool CBot::BotBuildNodeRoute( const Vector &goal )
+{
+   if (!BotCanUseNodeGraph())
+       return false;
+
+   int srcNode = WorldGraph.FindNearestNode(pev->origin, this);
+   int dstNode = WorldGraph.FindNearestNode(goal, this);
+
+   if (srcNode == -1 || dstNode == -1)
+       return false;
+
+   int hull = WorldGraph.HullIndex(this);
+   int path[MAX_PATH_SIZE];
+
+   int pathLen = WorldGraph.FindShortestPath(
+       path, srcNode, dstNode, hull, m_afCapability
+   );
+
+   if (pathLen <= 0)
+       return false;
+
+   if (pathLen > MAX_PATH_SIZE)
+       pathLen = MAX_PATH_SIZE;
+
+   m_iNavPathLen = pathLen;
+   m_iNavPathIndex = 0;
+   m_vecNavGoal = goal;
+
+   for (int i = 0; i < pathLen; i++)
+       m_iNavPath[i] = path[i];
+
+   m_NavMode = NAV_WANDER;
+   return true;
+}
+
+bool CBot::BotFollowNodeRoute( void )
+{
+   if (m_iNavPathIndex >= m_iNavPathLen)
+       return false;
+
+   int nodeIndex = m_iNavPath[m_iNavPathIndex];
+   Vector waypoint = WorldGraph.m_pNodes[nodeIndex].m_vecOrigin;
+
+   Vector delta = waypoint - pev->origin;
+   float dist = delta.Length();
+
+   // advance to the next node when close enough
+   if (dist < 40.0f)
+   {
+       m_iNavPathIndex++;
+
+       if (m_iNavPathIndex >= m_iNavPathLen)
+       {
+           // final leg to exact goal
+           Vector goalDelta = m_vecNavGoal - pev->origin;
+           if (goalDelta.Length() < 40.0f)
+           {
+               BotClearNodeRoute();
+               return false;
+           }
+           waypoint = m_vecNavGoal;
+           delta = waypoint - pev->origin;
+       }
+       else
+       {
+           nodeIndex = m_iNavPath[m_iNavPathIndex];
+           waypoint = WorldGraph.m_pNodes[nodeIndex].m_vecOrigin;
+           delta = waypoint - pev->origin;
+       }
+   }
+
+   Vector angles = UTIL_VecToAngles(delta);
+   pev->ideal_yaw = angles.y;
+   pev->idealpitch = 0;
+   f_move_speed = f_max_speed;
+
+   return true;
+}
+
+bool CBot::BotPickRandomNodeGoal( void )
+{
+   if (!BotCanUseNodeGraph())
+       return false;
+
+   int src = WorldGraph.FindNearestNode(pev->origin, this);
+   if (src == -1)
+       return false;
+
+   // simple version: scan the current node's links and pick one at random
+   int linkCount = WorldGraph.m_pNodes[src].m_cNumLinks;
+   if (linkCount <= 0)
+       return false;
+
+   int choice = RANDOM_LONG(0, linkCount - 1);
+   int dst = WorldGraph.INodeLink(src, choice);
+
+   Vector goal = WorldGraph.m_pNodes[dst].m_vecOrigin;
+   return BotBuildNodeRoute(goal);
+}
+
+// This prevents bot from reusing the same routes over and over
+bool CBot::BotIsRecentNode(int node)
+{
+   for (int i = 0; i < 4; i++)
+   {
+       if (m_iRecentNodes[i] == node)
+           return true;
+   }
+   return false;
+}
+
+bool CBot::BotPickWanderNode()
+{
+   if (!BotCanUseNodeGraph())
+       return false;
+
+   int src = WorldGraph.FindNearestNode(pev->origin, this);
+   if (src == -1)
+        return false;
+
+   int bestNode = -1;
+
+   for (int tries = 0; tries < 12; tries++)
+   {
+       int linkCount = WorldGraph.m_pNodes[src].m_cNumLinks;
+       if (linkCount <= 0)
+           return false;
+
+       int linkIndex = RANDOM_LONG(0, linkCount - 1);
+       int candidate = WorldGraph.INodeLink(src, linkIndex);
+
+       if (candidate == src)
+           continue;
+       if (candidate == m_iPrevNode)
+           continue;
+       if (BotIsRecentNode(candidate))
+           continue;
+
+       bestNode = candidate;
+       break;
+   }
+
+   if (bestNode == -1)
+       return false;
+
+   Vector goal = WorldGraph.m_pNodes[bestNode].m_vecOrigin;
+   if (!BotBuildNodeRoute(goal))
+       return false;
+
+   m_iPrevNode = src;
+   m_iRecentNodes[m_iRecentNodePos++ & 3] = bestNode;
+   m_NavMode = NAV_WANDER;
+   return true;
+}
+
+int CBot::TakeDamage( entvars_t *pevInflictor, entvars_t *pevAttacker, float flDamage, int bitsDamageType )
 {
    CBaseEntity *pAttacker = CBaseEntity::Instance(pevAttacker);
    char sound[40];
@@ -1123,20 +1304,23 @@ void CBot::BotFindItem( void )
 
    if (pPickupEntity != NULL)
    {
-      // let's head off toward that item...
+      pBotPickupItem = pPickupEntity;
+
+      if (m_bUseNodeNav && BotBuildNodeRoute(pickup_origin))
+      {
+         m_NavMode = NAV_ITEM;
+         return;
+      }
+
+      // fallback to current behavior. Fallback happens only when there's no node graph for this map
       Vector v_item = pickup_origin - pev->origin;
-      Vector bot_angles = UTIL_VecToAngles( v_item );
+      Vector bot_angles = UTIL_VecToAngles(v_item );
 
       pev->ideal_yaw = bot_angles.y;
       pev->idealpitch = bot_angles.x;
 
-      // check for wrap around of angle...
-      if (pev->ideal_yaw > 180)
-         pev->ideal_yaw -= 360;
-      if (pev->ideal_yaw < -180)
-         pev->ideal_yaw += 360;
-
-      pBotPickupItem = pPickupEntity;  // save the item bot is trying to get
+      if (pev->ideal_yaw > 180) pev->ideal_yaw -= 360;
+      if (pev->ideal_yaw < -180) pev->ideal_yaw += 360;
    }
 }
 
@@ -1815,10 +1999,26 @@ void CBot::BotThink( void )
       else
          pBotEnemy = NULL;  // clear enemy pointer (no ememy for you!)
 
-      if (pBotEnemy != NULL)  // does an enemy exist?
+   if (pBotEnemy != NULL)
+   {
+      if (BotEntityIsVisible(pBotEnemy->pev->origin))
       {
-         BotShootAtEnemy( );  // shoot at the enemy
+         BotShootAtEnemy();
       }
+      else if (m_bUseNodeNav)
+      {
+         if (!BotBuildNodeRoute(pBotEnemy->pev->origin))
+         {
+            // fallback to botman's chase behavior
+            BotShootAtEnemy();
+         }
+         else
+         {
+            m_NavMode = NAV_ENEMY;
+            BotFollowNodeRoute();
+         }
+      }
+   }
 
       else if (f_pause_time > gpGlobals->time)  // is bot "paused"?
       {
@@ -1843,6 +2043,12 @@ void CBot::BotThink( void )
          pev->v_angle.z = 0;
 
          pev->idealpitch = 0;
+
+         if (m_bUseNodeNav && m_iNavPathLen > 0)
+         {
+           if (BotFollowNodeRoute())
+           goto finish_movement;
+         }
 
          // check if bot should look for items now or not...
          if (f_find_item < gpGlobals->time)
@@ -1944,109 +2150,116 @@ void CBot::BotThink( void )
             {
                BotUnderWater( );
             }
-
-            // check if there is a wall on the left...
-            if (!BotCheckWallOnLeft())
+            else
             {
-               // if there was a wall on the left over 1/2 a second ago then
-               // 20% of the time randomly turn between 45 and 60 degrees
-           
-               if ((f_wall_on_left != 0) &&
-                   (f_wall_on_left <= gpGlobals->time - 0.5) &&
-                   (RANDOM_LONG(1, 100) <= 20))
+               if (m_bUseNodeNav && BotCanUseNodeGraph() && BotFollowNodeRoute())
                {
-                  pev->ideal_yaw += RANDOM_LONG(45, 60);
-
-                  // check for wrap around of angle...
-                  if (pev->ideal_yaw > 180)
-                     pev->ideal_yaw -= 360;
-                  if (pev->ideal_yaw < -180)
-                     pev->ideal_yaw += 360;
-
-                  f_move_speed = 0;  // move while turning
-                  f_dont_avoid_wall_time = gpGlobals->time + 1.0;
-               }
-
-               f_wall_on_left = 0;  // reset wall detect time
-            }
-
-            // check if there is a wall on the right...
-            if (!BotCheckWallOnRight())
-            {
-               // if there was a wall on the right over 1/2 a second ago then
-               // 20% of the time randomly turn between 45 and 60 degrees
-
-               if ((f_wall_on_right != 0) &&
-                   (f_wall_on_right <= gpGlobals->time - 0.5) &&
-                   (RANDOM_LONG(1, 100) <= 20))
-               {
-                  pev->ideal_yaw -= RANDOM_LONG(45, 60);
-
-                  // check for wrap around of angle...
-                  if (pev->ideal_yaw > 180)
-                     pev->ideal_yaw -= 360;
-                  if (pev->ideal_yaw < -180)
-                     pev->ideal_yaw += 360;
-
-                  f_move_speed = 0;  // move while turning
-                  f_dont_avoid_wall_time = gpGlobals->time + 1.0;
-               }
-
-               f_wall_on_right = 0;  // reset wall detect time
-            }
-
-            // check if bot is about to hit a wall.  TraceResult gets returned
-            if ((f_dont_avoid_wall_time <= gpGlobals->time) &&
-                BotCantMoveForward( &tr ))
-            {
-               // ADD LATER
-               // need to check if bot can jump up or duck under here...
-               // ADD LATER
-
-               BotTurnAtWall( &tr );
-            }
-
-            // check if the bot hasn't moved much since the last location
-            if (moved_distance <= 1 && (!bot_was_paused) && (!b_lift_moving) && (!b_see_tripmine))
-            {
-               // the bot must be stuck!
-               if (BotCanJumpUp( ))  // can the bot jump onto something?
-               {
-                  pev->button |= IN_JUMP;  // jump up and move forward
-               }
-               else if (BotCanDuckUnder( ))  // can the bot duck under something?
-               {
-                  pev->button |= IN_DUCK;  // duck down and move forward
                }
                else
                {
-                  f_move_speed = f_max_speed;  // move while turning
-
-                  // turn randomly between 30 and 60 degress
-                  if (wander_dir == WANDER_LEFT)
-                     pev->ideal_yaw += RANDOM_LONG(30, 60);
-                  else
-                     pev->ideal_yaw -= RANDOM_LONG(30, 60);
-
-                  // check for wrap around of angle...
-                  if (pev->ideal_yaw > 180)
-                     pev->ideal_yaw -= 360;
-                  if (pev->ideal_yaw < -180)
-                     pev->ideal_yaw += 360;
-
-                  // is the bot trying to get to an item?...
-                  if (pBotPickupItem != NULL)
+                  // check if there is a wall on the left...
+                  if (!BotCheckWallOnLeft())
                   {
-                     // don't look for items for a while since the bot
-                     // could be stuck trying to get to an item
-                     f_find_item = gpGlobals->time + 0.5;
-                  }
-               }
-            }
-         }
-      }
-   }
+                     // if there was a wall on the left over 1/2 a second ago then
+                     // 20% of the time randomly turn between 45 and 60 degrees
 
+                     if ((f_wall_on_left != 0) &&
+                        (f_wall_on_left <= gpGlobals->time - 0.5) &&
+                        (RANDOM_LONG(1, 100) <= 20))
+                        {
+                           pev->ideal_yaw += 90;
+
+                          // check for wrap around of angle...
+                          if (pev->ideal_yaw > 180)
+                              pev->ideal_yaw -= 360;
+                          if (pev->ideal_yaw < -180)
+                              pev->ideal_yaw += 360;
+
+                          f_move_speed = 0;  // move while turning
+                          f_dont_avoid_wall_time = gpGlobals->time + 1.0;
+                     }
+
+                     f_wall_on_left = 0;  // reset wall detect time
+                  }
+
+                  // check if there is a wall on the right...
+                  if (!BotCheckWallOnRight())
+                  {
+                     // if there was a wall on the right over 1/2 a second ago then
+                     // 20% of the time randomly turn between 45 and 60 degrees
+
+                     if ((f_wall_on_right != 0) &&
+                     (f_wall_on_right <= gpGlobals->time - 0.5) &&
+                     (RANDOM_LONG(1, 100) <= 20))
+                     {
+                        pev->ideal_yaw -= 90;
+
+                       // check for wrap around of angle...
+                       if (pev->ideal_yaw > 180)
+                           pev->ideal_yaw -= 360;
+                       if (pev->ideal_yaw < -180)
+                           pev->ideal_yaw += 360;
+
+                       f_move_speed = 0;  // move while turning
+                       f_dont_avoid_wall_time = gpGlobals->time + 1.0;
+                     }
+
+                       f_wall_on_right = 0;  // reset wall detect time
+                  }
+
+                  // check if bot is about to hit a wall.  TraceResult gets returned
+                  if ((f_dont_avoid_wall_time <= gpGlobals->time) &&
+                      BotCantMoveForward( &tr ))
+                  {
+                     // ADD LATER
+                     // need to check if bot can jump up or duck under here...
+                     // ADD LATER
+
+                     BotTurnAtWall( &tr );
+                  }
+
+                  // check if the bot hasn't moved much since the last location
+                  if (moved_distance <= 1 && (!bot_was_paused) && (!b_lift_moving) && (!b_see_tripmine))
+                  {
+                     // the bot must be stuck!
+                     if (BotCanJumpUp( ))  // can the bot jump onto something?
+                     {
+                        pev->button |= IN_JUMP;  // jump up and move forward
+                     }
+                     else if (BotCanDuckUnder( ))  // can the bot duck under something?
+                     {
+                        pev->button |= IN_DUCK;  // duck down and move forward
+                     }
+                     else
+                     {
+                        f_move_speed = f_max_speed;  // move while turning
+
+                        // turn randomly between 30 and 60 degress
+                        if (wander_dir == WANDER_LEFT)
+                           pev->ideal_yaw += 90;
+                        else
+                           pev->ideal_yaw -= 90;
+
+                        // check for wrap around of angle...
+                        if (pev->ideal_yaw > 180)
+                            pev->ideal_yaw -= 360;
+                        if (pev->ideal_yaw < -180)
+                            pev->ideal_yaw += 360;
+
+                       // is the bot trying to get to an item?...
+                       if (pBotPickupItem != NULL)
+                       {
+                          // don't look for items for a while since the bot
+                          // could be stuck trying to get to an item
+                           f_find_item = gpGlobals->time + 0.5;
+                       }
+                   }
+               }
+           }
+        }
+     }
+  }
+}
    if (f_move_speed > 0)
       pev->button |= IN_FORWARD;
 
@@ -2054,6 +2267,10 @@ void CBot::BotThink( void )
       bot_was_paused = TRUE;
    else
       bot_was_paused = FALSE;
+
+   finish_movement:
+   if (f_move_speed > 0)
+      pev->button |= IN_FORWARD;
 
    // TheFatal START - from www.telefragged.com/thefatal/jumblow.shtml
 
