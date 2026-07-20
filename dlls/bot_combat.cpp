@@ -39,16 +39,11 @@ ammo_check_t ammo_check[] = {
    {"ammo_gaussclip", "uranium", URANIUM_MAX_CARRY},
    {"", 0, 0}};
 
-// sounds for Bot taunting after a kill...
-char barney_taunt[][30] = { BA_TNT1, BA_TNT2, BA_TNT3, BA_TNT4, BA_TNT5 };
-char scientist_taunt[][30] = { SC_TNT1, SC_TNT2, SC_TNT3, SC_TNT4, SC_TNT5 };
-
 
 CBaseEntity * CBot::BotFindEnemy( void )
 {
    Vector vecEnd;
    static BOOL flag=TRUE;
-   char sound[40];  // for taunting sounds
 
    if (pBotEnemy != NULL)  // does the bot already have an enemy?
    {
@@ -62,22 +57,6 @@ CBaseEntity * CBot::BotFindEnemy( void )
             // the enemy is dead, jump for joy about 10% of the time
             if (RANDOM_LONG(1, 100) <= 10)
                pev->button |= IN_JUMP;
-
-            // check if this player is not a bot (i.e. not fake client)...
-            if (pBotEnemy->IsNetClient() && !IS_DEDICATED_SERVER())
-            {
-               // speak taunt sounds about 10% of the time
-               if (RANDOM_LONG(1, 100) <= 10)
-               {
-                  if (bot_model == MODEL_BARNEY)
-                     strcpy( sound, barney_taunt[RANDOM_LONG(0,4)] );
-                  else if (bot_model == MODEL_SCIENTIST)
-                     strcpy( sound, scientist_taunt[RANDOM_LONG(0,4)] );
-
-                  EMIT_SOUND(ENT(pBotEnemy->pev), CHAN_VOICE, sound,
-                             RANDOM_FLOAT(0.9, 1.0), ATTN_NORM);
-               }
-            }
          }
 
          // don't have an enemy anymore so null out the pointer...

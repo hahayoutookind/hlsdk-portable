@@ -90,12 +90,6 @@ float pause_time[5][2] = {
 
 extern ammo_check_t ammo_check[];
 
-// sounds for TakeDamage speaking effects...
-char hgrunt_sounds[][30] = { HG_SND1, HG_SND2, HG_SND3, HG_SND4, HG_SND5 };
-char barney_sounds[][30] = { BA_SND1, BA_SND2, BA_SND3, BA_SND4, BA_SND5 };
-char scientist_sounds[][30] = { SC_SND1, SC_SND2, SC_SND3, SC_SND4, SC_SND5 };
-
-
 LINK_ENTITY_TO_CLASS( bot, CBot );
 
 
@@ -608,38 +602,6 @@ int CBot::TakeDamage( entvars_t *pevInflictor, entvars_t *pevAttacker, float flD
       // stop using health or HEV stations...
       b_use_health_station = FALSE;
       b_use_HEV_station = FALSE;
-   }
-
-   // check if bot model is known, attacker is not a bot,
-   // time for pain sound, and bot has some of health left...
-
-   if ((bot_model != 0) && (pAttacker->IsNetClient()) &&
-       (f_pain_time <= gpGlobals->time) && (pev->health > 0) &&
-       ( !IS_DEDICATED_SERVER() ))
-   {
-      float distance = (pAttacker->pev->origin - pev->origin).Length( );
-
-      // check if the distance to attacker is close enough (otherwise
-      // the attacker is too far away to hear the pain sounds)
-
-      if (distance <= 400)
-      {
-         // speak pain sounds about 50% of the time
-         if (RANDOM_LONG(1, 100) <= 50)
-         {
-            f_pain_time = gpGlobals->time + 5.0;
-
-            if (bot_model == MODEL_HGRUNT)
-               strcpy( sound, hgrunt_sounds[RANDOM_LONG(0,4)] );
-            else if (bot_model == MODEL_BARNEY)
-               strcpy( sound, barney_sounds[RANDOM_LONG(0,4)] );
-            else if (bot_model == MODEL_SCIENTIST)
-               strcpy( sound, scientist_sounds[RANDOM_LONG(0,4)] );
-
-            EMIT_SOUND(ENT(pevAttacker), CHAN_VOICE, sound,
-                       RANDOM_FLOAT(0.9, 1.0), ATTN_NORM);
-         }
-      }
    }
 
    return ret_damage;
