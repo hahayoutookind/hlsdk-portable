@@ -319,7 +319,7 @@ void CBot::Spawn( )
 
    CBasePlayer::Spawn();
 
-   pev->flags = FL_CLIENT | FL_FAKECLIENT;
+   pev->flags = FL_FAKECLIENT;
 
    // set the respawn index value based on key from BotCreate
    strcpy(c_index, GET_INFO_KEY_VALUE(GET_INFOBUFFER(edict( )), "index") );
