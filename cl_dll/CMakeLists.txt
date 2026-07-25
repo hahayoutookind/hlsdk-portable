@@ -227,12 +227,10 @@ endif()
 set_target_properties (${CLDLL_LIBRARY} PROPERTIES
 	POSITION_INDEPENDENT_CODE 1)
 
-if(NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Android" OR XASH_TERMUX)
-	set(CLDLL_NAME "client")
-	set_target_properties(${CLDLL_LIBRARY} PROPERTIES
-		OUTPUT_NAME "${CLDLL_NAME}${POSTFIX}"
-		PREFIX "")
-endif()
+set(CLDLL_NAME "client")
+set_target_properties(${CLDLL_LIBRARY} PROPERTIES
+	OUTPUT_NAME "${CLDLL_NAME}${POSTFIX}"
+	PREFIX "")
 
 if(MSVC)
 	set_property(TARGET ${CLDLL_LIBRARY} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
