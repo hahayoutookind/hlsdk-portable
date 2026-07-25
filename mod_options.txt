@@ -15,4 +15,4 @@ HLDEMO_BUILD=OFF # Demo Build
 GAMEDIR=valve # Gamedir path
 SERVER_INSTALL_DIR=dlls # Where put server dll
 CLIENT_INSTALL_DIR=cl_dlls # Where put client dll 
-SERVER_LIBRARY_NAME=hl # Library name for PC platforms
+SERVER_LIBRARY_NAME=cringedm # Library name for PC platforms

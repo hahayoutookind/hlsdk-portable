@@ -1,4 +1,4 @@
-package su.xash.hlsdk;
+package su.xash.cdm;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -31,6 +31,7 @@ public class MainActivity extends Activity {
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 .putExtra("gamedir", "valve")
                 .putExtra("gamelibdir", getApplicationInfo().nativeLibraryDir)
+		.putExtra("argv", "-game valve -dll @cringedm")
                 .putExtra("package", getPackageName()));
         finish();
     }

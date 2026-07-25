@@ -3,6 +3,44 @@ name: build
 on: [push, pull_request]
 
 jobs:
+  android:
+    name: Android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build Android
+        run: ./gradlew assembleDebug
+        working-directory: android
+
+      - name: Extract branch name
+        shell: bash
+        id: extract_branch
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/} | tr '/' '_')" >> $GITHUB_OUTPUT
+
+      - name: Rename APK
+        run: mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/CringeDM.apk
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: CringeDM-android
+          path: android/app/build/outputs/apk/debug/CringeDM.apk
+
   build:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -108,30 +146,30 @@ jobs:
       if: startsWith(matrix.os, 'ubuntu') && matrix.cc == 'gcc'
       uses: actions/upload-artifact@v4
       with:
-        name: hlsdk-${{ steps.extract_branch.outputs.branch }}-linux
+        name: cringedm-linux
         path: dist/${{ steps.extract_gamedir.outputs.gamedir }}
     - name: Upload linux artifact with vgui
       if: startsWith(matrix.os, 'ubuntu') && matrix.cc == 'gcc'
       uses: actions/upload-artifact@v4
       with:
-        name: hlsdk-${{ steps.extract_branch.outputs.branch }}-linux-vgui
+        name: cringedm-linux-vgui
         path: dist-vgui/${{ steps.extract_gamedir.outputs.gamedir }}
     - name: Upload windows artifact
       if: startsWith(matrix.os, 'windows')
       uses: actions/upload-artifact@v4
       with:
-        name: hlsdk-${{ steps.extract_branch.outputs.branch }}-windows
+        name: cringedm-windows
         path: dist/${{ steps.extract_gamedir.outputs.gamedir }}
     - name: Upload windows x64 artifact
       if: startsWith(matrix.os, 'windows')
       uses: actions/upload-artifact@v4
       with:
-        name: hlsdk-${{ steps.extract_branch.outputs.branch }}-windows_x64
+        name: cringedm-windows_x64
         path: dist64/${{ steps.extract_gamedir.outputs.gamedir }}
     - name: Upload windows artifact with vgui
       if: startsWith(matrix.os, 'windows')
       uses: actions/upload-artifact@v4
       with:
-        name: hlsdk-${{ steps.extract_branch.outputs.branch }}-windows-vgui
+        name: cringedm-windows-vgui
         path: dist-vgui/${{ steps.extract_gamedir.outputs.gamedir }}
 
