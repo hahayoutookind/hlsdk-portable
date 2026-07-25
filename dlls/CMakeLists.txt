@@ -45,9 +45,9 @@ else()
 endif()
 
 set (SVDLL_SOURCES
+	aflock.cpp
 	agrunt.cpp
 	airtank.cpp
-	aflock.cpp
 	animating.cpp
 	animation.cpp
 	apache.cpp
@@ -94,6 +94,7 @@ set (SVDLL_SOURCES
 	hornet.cpp
 	hornetgun.cpp
 	houndeye.cpp
+	hudtimer.cpp
 	ichthyosaur.cpp
 	islave.cpp
 	items.cpp
@@ -131,6 +132,7 @@ set (SVDLL_SOURCES
 	spectator.cpp
 	squadmonster.cpp
 	squeakgrenade.cpp
+	stats.cpp
 	subs.cpp
 	talkmonster.cpp
 	teamplay_gamerules.cpp
