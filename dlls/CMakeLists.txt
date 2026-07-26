@@ -95,6 +95,7 @@ set (SVDLL_SOURCES
 	hornetgun.cpp
 	houndeye.cpp
 	hudtimer.cpp
+	hudtext.cpp
 	ichthyosaur.cpp
 	islave.cpp
 	items.cpp
