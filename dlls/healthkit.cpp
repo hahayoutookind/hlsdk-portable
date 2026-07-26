@@ -166,7 +166,6 @@ void CWallHealth::Spawn()
 
 void CWallHealth::Precache()
 {
-	PRECACHE_SOUND( "items/medshot4.wav" );
 	PRECACHE_SOUND( "items/medshotno1.wav" );
 	PRECACHE_SOUND( "items/medcharge4.wav" );
 }
@@ -209,8 +208,7 @@ void CWallHealth::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE u
 	if( !m_iOn )
 	{
 		m_iOn++;
-		EMIT_SOUND( ENT( pev ), CHAN_ITEM, "items/medshot4.wav", 1.0, ATTN_NORM );
-		m_flSoundTime = 0.56f + gpGlobals->time;
+		m_flSoundTime = 0.0f + gpGlobals->time;
 	}
 	if( ( m_iOn == 1 ) && ( m_flSoundTime <= gpGlobals->time ) )
 	{
