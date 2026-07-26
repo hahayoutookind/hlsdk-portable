@@ -223,7 +223,7 @@ void CWallHealth::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE u
 	}
 
 	// govern the rate of charge
-	m_flNextCharge = gpGlobals->time + 0.2f;
+	m_flNextCharge = gpGlobals->time + 0.12f;
 }
 
 void CWallHealth::Recharge( void )
