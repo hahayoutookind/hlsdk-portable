@@ -51,7 +51,7 @@ void HudTimer::Think()
 
 		char szTime[128];
 
-		if (lTime > 0)
+		if (lTime > 0 || mp_timelimit > 0)
 		{
 			long days = lTime / 86400;
 			long hours = (lTime % 86400) / 3600;
@@ -83,6 +83,14 @@ void HudTimer::Think()
 
 			char szText[256];
 			sprintf(szText, "Map: %s\nNext: %s\n%s\n", CVAR_GET_STRING( "dm_map" ), CVAR_GET_STRING( "dm_nextmap" ), szTime );
+
+			UTIL_DrawHudMessageAll(CHAN_TIMER, Vector(250, 160, 0), Vector(0, 60, 0), szText);
+			m_fNextTimerUpdate += 1;
+		}
+		else
+		{
+			char szText[256];
+			sprintf(szText, "Map: %s", CVAR_GET_STRING( "dm_map" ));
 
 			UTIL_DrawHudMessageAll(CHAN_TIMER, Vector(250, 160, 0), Vector(0, 60, 0), szText);
 			m_fNextTimerUpdate += 1;
