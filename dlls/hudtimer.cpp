@@ -51,7 +51,7 @@ void HudTimer::Think()
 
 		char szTime[128];
 
-		if (lTime > 0 || mp_timelimit > 0)
+		if (lTime > 0 || timelimit.value > 0)
 		{
 			long days = lTime / 86400;
 			long hours = (lTime % 86400) / 3600;
