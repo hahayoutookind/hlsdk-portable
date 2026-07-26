@@ -166,7 +166,7 @@ void CRecharge::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE use
 	}
 
 	// govern the rate of charge
-	m_flNextCharge = gpGlobals->time + 0.1f;
+	m_flNextCharge = gpGlobals->time + 0.3f;
 }
 
 void CRecharge::Recharge( void )
