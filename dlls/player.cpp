@@ -115,6 +115,7 @@ TYPEDESCRIPTION	CBasePlayer::m_playerSaveData[] =
 	DEFINE_FIELD( CBasePlayer, m_iExtraSoundTypes, FIELD_INTEGER ),
 	DEFINE_FIELD( CBasePlayer, m_iWeaponFlash, FIELD_INTEGER ),
 	DEFINE_FIELD( CBasePlayer, m_fLongJump, FIELD_BOOLEAN ),
+	DEFINE_FIELD( CBasePlayer, m_fStarman, FIELD_BOOLEAN ),
 	DEFINE_FIELD( CBasePlayer, m_fInitHUD, FIELD_BOOLEAN ),
 	DEFINE_FIELD( CBasePlayer, m_tbdPrev, FIELD_TIME ),
 
@@ -457,7 +458,7 @@ int CBasePlayer::TakeDamage( entvars_t *pevInflictor, entvars_t *pevAttacker, fl
 	// go take the damage first
 	CBaseEntity *pAttacker = CBaseEntity::Instance( pevAttacker );
 
-	if( !g_pGameRules->FPlayerCanTakeDamage( this, pAttacker ) )
+	if( !g_pGameRules->FPlayerCanTakeDamage( this, pAttacker ) || m_fStarman )
 	{
 		// Refuse the damage
 		return 0;
@@ -2155,6 +2156,30 @@ void CBasePlayer::PreThink( void )
 		Jump();
 	}
 
+	if( m_fStarman )
+	{
+		// intro sound
+		if( bDoIntro )
+		{
+			EMIT_SOUND( ENT(pev), CHAN_STATIC, "fvox/morphine_shot.wav", 1.0, ATTN_NORM );
+			bDoIntro = FALSE;
+		}
+
+		// play looped starman theme
+		if( gpGlobals->time >= m_flSoundTime )
+		{
+			STOP_SOUND( ENT(pev), CHAN_STATIC, "music/starman.wav" );
+			EMIT_SOUND( ENT(pev), CHAN_STATIC, "music/starman.wav", 1.0, ATTN_NORM );
+			m_flSoundTime = gpGlobals->time + 6.38f;
+		}
+
+		if( gpGlobals->time >= m_flStarmanTime )
+		{
+			m_fStarman = FALSE;
+			STOP_SOUND( ENT(pev), CHAN_STATIC, "music/starman.wav" );
+		}
+	}
+
 	// If trying to duck, already ducked, or in the process of ducking
 	if( ( pev->button & IN_DUCK ) || FBitSet( pev->flags,FL_DUCKING ) || ( m_afPhysicsFlags & PFLAG_DUCKING ) )
 		Duck();
@@ -3059,6 +3084,7 @@ void CBasePlayer::Spawn( void )
 	m_bitsDamageType = 0;
 	m_afPhysicsFlags = 0;
 	m_fLongJump = FALSE;// no longjump module. 
+	m_fStarman = FALSE;// no starman
 
 	g_engfuncs.pfnSetPhysicsKeyValue( edict(), "slj", "0" );
 	g_engfuncs.pfnSetPhysicsKeyValue( edict(), "hl", "1" );
@@ -3175,6 +3201,8 @@ void CBasePlayer::Precache( void )
 		m_fInitHUD = TRUE;
 
 	pev->fov = m_iFOV;	// Vit_amiN: restore the FOV on level change or map/saved game load
+
+	PRECACHE_SOUND( "music/starman.wav" );
 }
 
 int CBasePlayer::Save( CSave &save )

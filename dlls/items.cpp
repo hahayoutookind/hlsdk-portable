@@ -62,6 +62,9 @@ void CWorldItem::Spawn( void )
 	case 44: // ITEM_BATTERY:
 		pEntity = CBaseEntity::Create( "item_battery", pev->origin, pev->angles );
 		break;
+	case 46: // ITEM_STARMAN:
+		pEntity = CBaseEntity::Create( "item_starman", pev->origin, pev->angles );
+		break;
 	case 42: // ITEM_ANTIDOTE:
 		pEntity = CBaseEntity::Create( "item_antidote", pev->origin, pev->angles );
 		break;
@@ -203,6 +206,40 @@ class CItemSuit : public CItem
 };
 
 LINK_ENTITY_TO_CLASS( item_suit, CItemSuit )
+
+class CItemStarman : public CItem
+{
+	void Spawn( void )
+	{
+		Precache();
+		SET_MODEL( ENT( pev ), "models/w_adrenaline.mdl" );
+		CItem::Spawn();
+	}
+	void Precache( void )
+	{
+		PRECACHE_MODEL( "models/w_adrenaline.mdl" );
+		PRECACHE_SOUND( "music/starman.wav" );
+		PRECACHE_SOUND( "fvox/morphine_shot.wav" );
+	}
+	BOOL MyTouch( CBasePlayer *pPlayer )
+	{
+		if( pPlayer->m_fStarman )
+			return FALSE;
+
+		MESSAGE_BEGIN( MSG_ONE, gmsgItemPickup, NULL, pPlayer->pev );
+			WRITE_STRING( STRING( pev->classname ) );
+		MESSAGE_END();
+
+		pPlayer->m_fStarman = TRUE; // Starman!!! The player became an Starman.
+		pPlayer->bDoIntro = TRUE;
+		pPlayer->m_flStarmanTime = gpGlobals->time + 20.0f;
+		pPlayer->m_flSoundTime = gpGlobals->time + 2.0f;
+
+		return TRUE;
+	}
+};
+
+LINK_ENTITY_TO_CLASS( item_starman, CItemStarman )
 
 class CItemBattery : public CItem
 {

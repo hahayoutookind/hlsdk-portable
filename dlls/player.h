@@ -99,7 +99,11 @@ public:
 	int		m_iObserverLastMode;// last used observer mode
 	int		IsObserver() { return pev->iuser1; };
 
-	int					random_seed;    // See that is shared between client & server for shared weapons code
+	int					random_seed;    // See that is shared between client & server for shared weapons code.
+
+	float					m_flStarmanTime;    // starman powerup time
+	float					m_flSoundTime;    // when to repeat the music
+	bool					bDoIntro;	// should the fvox/morphine_shot get played or not?
 
 	int					m_iPlayerSound;// the index of the sound list slot reserved for this player
 	int					m_iTargetVolume;// ideal sound volume. 
@@ -165,6 +169,7 @@ public:
 
 	BOOL			m_fNoPlayerSound;	// a debugging feature. Player makes no sound if this is true. 
 	BOOL			m_fLongJump; // does this player have the longjump module?
+	BOOL			m_fStarman; // does this player have starman?
 
 	float       m_tSneaking;
 	int			m_iUpdateTime;		// stores the number of frame ticks before sending HUD update messages
