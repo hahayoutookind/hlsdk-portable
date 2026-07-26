@@ -115,6 +115,8 @@ def configure(conf):
 	cflags, linkflags = conf.get_optimization_flags()
 	cxxflags = list(cflags) # optimization flags are common between C and C++ but we need a copy
 
+	conf.env.append_unique('CXXFLAGS_cxxshlib', ['-Wno-logical-op-parentheses'])
+
 	# on the Switch, allow undefined symbols by default, which is needed for libsolder to work
 	# we'll specifically disallow them for the engine executable
 	# additionally, shared libs are linked without standard libs, we'll add those back in the engine wscript
