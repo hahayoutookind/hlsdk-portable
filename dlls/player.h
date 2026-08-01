@@ -330,6 +330,8 @@ public:
 	int m_iAutoWepSwitch;
 
 	Vector m_vecLastViewAngles;
+
+	virtual BOOL IsBot() { return FALSE; }
 };
 
 #define AUTOAIM_2DEGREES  0.0348994967025
