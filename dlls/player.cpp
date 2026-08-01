@@ -2996,10 +2996,6 @@ void CBasePlayer::Spawn( void )
 
 	m_flNextChatTime = gpGlobals->time;
 
-	// START BOT
-	pBotCam = NULL;
-	// END BOT
-
 	g_pGameRules->PlayerSpawn( this );
 }
 

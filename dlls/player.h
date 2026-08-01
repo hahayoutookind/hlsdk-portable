@@ -18,10 +18,6 @@
 
 #include "pm_materials.h"
 
-//START BOT
-class CBotCam;
-//END BOT
-
 #define PLAYER_FATAL_FALL_SPEED		1024// approx 60 feet
 #define PLAYER_MAX_SAFE_FALL_SPEED	580// approx 20 feet
 #define DAMAGE_FOR_FALL_SPEED		(float) 100 / ( PLAYER_FATAL_FALL_SPEED - PLAYER_MAX_SAFE_FALL_SPEED )// damage per unit per second.
@@ -200,10 +196,6 @@ public:
 	float	m_flNextDecalTime;// next time this player can spray a decal
 
 	char m_szTeamName[TEAM_NAME_LENGTH];
-
-	//START BOT
-	CBotCam *pBotCam;
-	//END BOT
 
 	virtual void Spawn( void );
 	void Pain( void );
