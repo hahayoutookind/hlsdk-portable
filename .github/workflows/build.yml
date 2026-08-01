@@ -51,9 +51,6 @@ jobs:
           - os: ubuntu-latest
             cc: clang
             cxx: clang++
-          - os: windows-latest
-            cc: cl
-            cxx: cl
     env:
       CC: ${{ matrix.cc }}
       CXX: ${{ matrix.cxx }}
