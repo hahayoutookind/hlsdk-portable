@@ -50,6 +50,9 @@ void IdleState::OnUpdate(CHLBot *me)
 
 	CHLBotManager *ctrl = TheHLBots();
 
+	if (me->TryCollectNearbyItem())
+		return;
+
 	// if round is over, hunt
 	if (me->GetGameState()->IsRoundOver())
 	{

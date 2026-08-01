@@ -53,6 +53,18 @@ void MoveToState::OnUpdate(CHLBot *me)
 		}
 	}
 
+	CBaseEntity *goalEntity = me->GetGoalEntity();
+	if (goalEntity != NULL)
+	{
+		const char *classname = STRING(goalEntity->pev->classname);
+		if ((FStrEq(classname, "func_recharge") || FStrEq(classname, "func_healthcharger") || FStrEq(classname, "func_button")) &&
+			(goalEntity->Center() - me->pev->origin).IsLengthLessThan(85.0f))
+		{
+			me->UseEntity(goalEntity);
+			return;
+		}
+	}
+
 	// look around
 	me->UpdateLookAround();
 
@@ -83,6 +95,7 @@ void MoveToState::OnExit(CHLBot *me)
 {
 	// reset to run in case we were walking near our goal position
 	me->Run();
+	me->SetGoalEntity(NULL);
 	me->SetDisposition(CHLBot::ENGAGE_AND_INVESTIGATE);
 	//me->StopAiming();
 }

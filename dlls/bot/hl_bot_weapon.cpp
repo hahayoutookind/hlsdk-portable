@@ -8,6 +8,34 @@ void CHLBot::FireWeaponAtEnemy()
 	CBasePlayer *enemy = GetEnemy();
 	if (enemy == NULL)
 	{
+		CBasePlayerWeapon *activeWeapon = GetActiveWeapon();
+		if (activeWeapon != NULL && activeWeapon->m_iId == WEAPON_GAUSS && IsNoiseHeard() && !CanSeeNoisePosition())
+		{
+			const Vector *noise = GetNoisePosition();
+			if (noise != NULL && HasAnyAmmo(activeWeapon))
+			{
+				Vector spot = *noise + Vector(0, 0, HalfHumanHeight);
+				SetLookAt("Gauss wallbang noise", &spot, PRIORITY_HIGH, 0.2f);
+
+				if (m_gaussNoiseChargeTimestamp <= 0.0f)
+					m_gaussNoiseChargeTimestamp = gpGlobals->time;
+
+				if (gpGlobals->time - m_gaussNoiseChargeTimestamp < 0.75f)
+				{
+					SecondaryAttack();
+				}
+				else
+				{
+					m_gaussNoiseChargeTimestamp = 0.0f;
+					ForgetNoise();
+				}
+			}
+		}
+		else
+		{
+			m_gaussNoiseChargeTimestamp = 0.0f;
+		}
+
 		StopRapidFire();
 		return;
 	}
@@ -91,6 +119,14 @@ void CHLBot::FireWeaponAtEnemy()
 									PrimaryAttack();
 							}
 						}
+					}
+					else if (IsUsingShotgun() && rangeToEnemy < 200.0f)
+					{
+						SecondaryAttack();
+					}
+					else if (IsUsingPistol())
+					{
+						SecondaryAttack();
 					}
 					else
 					{
@@ -431,15 +467,27 @@ const float minEquipInterval = 5.0f;
 
 void CHLBot::EquipBestWeapon(bool mustEquip)
 {
-	// throttle how often equipping is allowed
 	if (!mustEquip && m_equipTimer.GetElapsedTime() < minEquipInterval)
 		return;
 
-	CHLBotManager *ctrl = TheHLBots();
-	CBasePlayerWeapon *primary = static_cast<CBasePlayerWeapon *>(m_rgpPlayerItems[ 2 ]);
-	/// TODO: hl
-	// always have a knife
-	EquipKnife();
+	static const int preference[] =
+	{
+		WEAPON_RPG, WEAPON_GAUSS, WEAPON_EGON, WEAPON_CROSSBOW, WEAPON_MP5,
+		WEAPON_PYTHON, WEAPON_SHOTGUN, WEAPON_HORNETGUN, WEAPON_GLOCK, WEAPON_CROWBAR
+	};
+
+	for (int p = 0; p < ARRAYSIZE(preference); ++p)
+	{
+		for (int i = 0; i < MAX_ITEM_TYPES; ++i)
+		{
+			for (CBasePlayerItem *item = m_rgpPlayerItems[i]; item != NULL; item = item->m_pNext)
+			{
+				CBasePlayerWeapon *weapon = static_cast<CBasePlayerWeapon *>(item);
+				if (weapon->m_iId == preference[p] && DoEquip(weapon))
+					return;
+			}
+		}
+	}
 }
 
 // Equip our pistol
@@ -525,8 +573,8 @@ bool CHLBot::IsUsingPistol() const
 {
 	CBasePlayerWeapon *weapon = GetActiveWeapon();
 
-	//if (weapon != NULL && weapon->IsPistol())
-	//	return true;
+	if (weapon != NULL && weapon->m_iId == WEAPON_GLOCK)
+		return true;
 
 	return false;
 }
@@ -787,12 +835,12 @@ void CHLBot::SilencerCheck()
 
 void CHLBot::OnTouchingWeapon(CWeaponBox *box)
 {
-	CBasePlayerItem *droppedGun = dynamic_cast<CBasePlayerItem *>(box->m_rgpPlayerItems[ 2 ]);
+	CBasePlayerItem *droppedGun = static_cast<CBasePlayerItem *>(box->m_rgpPlayerItems[ 2 ]);
 
 	// right now we only care about primary weapons on the ground
 	if (droppedGun != NULL)
 	{
-		CBasePlayerWeapon *myGun = dynamic_cast<CBasePlayerWeapon *>(m_rgpPlayerItems[ 2 ]);
+		CBasePlayerWeapon *myGun = static_cast<CBasePlayerWeapon *>(m_rgpPlayerItems[ 2 ]);
 
 		// if the gun on the ground is the same one we have, dont bother
 		if (myGun != NULL && droppedGun->m_iId != myGun->m_iId)
@@ -876,4 +924,147 @@ float CHLBot::ComputeWeaponSightRange()
 	UTIL_TraceLine(GetGunPosition(), target + 10000.0f * aimDir, dont_ignore_monsters, ignore_glass, ENT(pev), &result);
 
 	return (GetGunPosition() - result.vecEndPos).Length();
+}
+
+bool CHLBot::HasWeaponID(int weaponID) const
+{
+	return (pev->weapons & (1 << weaponID)) != 0;
+}
+
+bool CHLBot::IsWeaponAmmoFull(CBasePlayerWeapon *weapon) const
+{
+	if (weapon == NULL)
+		return true;
+
+	if (weapon->m_iPrimaryAmmoType >= 0 && weapon->iMaxAmmo1() > 0 && m_rgAmmo[weapon->m_iPrimaryAmmoType] < weapon->iMaxAmmo1())
+		return false;
+
+	if (weapon->m_iSecondaryAmmoType >= 0 && weapon->iMaxAmmo2() > 0 && m_rgAmmo[weapon->m_iSecondaryAmmoType] < weapon->iMaxAmmo2())
+		return false;
+
+	return true;
+}
+
+bool CHLBot::HasUsefulAmmoSpace(const char *classname) const
+{
+	struct AmmoMap
+	{
+		const char *classname;
+		const char *ammoName;
+	};
+
+	static const AmmoMap ammoMap[] =
+	{
+		{ "ammo_glockclip", "9mm" },
+		{ "ammo_9mmclip", "9mm" },
+		{ "ammo_mp5clip", "9mm" },
+		{ "ammo_9mmAR", "9mm" },
+		{ "ammo_9mmbox", "9mm" },
+		{ "ammo_mp5grenades", "ARgrenades" },
+		{ "ammo_ARgrenades", "ARgrenades" },
+		{ "ammo_357", "357" },
+		{ "ammo_python", "357" },
+		{ "ammo_buckshot", "buckshot" },
+		{ "ammo_gaussclip", "uranium" },
+		{ "ammo_egonclip", "uranium" },
+		{ "ammo_rpgclip", "rockets" },
+		{ "ammo_crossbow", "bolts" },
+		{ "ammo_9mmARgrenades", "ARgrenades" },
+	};
+
+	for (int i = 0; i < ARRAYSIZE(ammoMap); ++i)
+	{
+		if (!Q_stricmp(classname, ammoMap[i].classname))
+		{
+			int ammoIndex = GetAmmoIndex(ammoMap[i].ammoName);
+			if (ammoIndex < 0)
+				return true;
+
+			return m_rgAmmo[ammoIndex] < MaxAmmoCarry(MAKE_STRING(ammoMap[i].ammoName));
+		}
+	}
+
+	return true;
+}
+
+bool CHLBot::IsButtonRecentlyPressed(CBaseEntity *button)
+{
+	const float buttonPressCooldown = 3.0f;
+	return button != NULL && m_lastPressedButton == button && gpGlobals->time - m_lastButtonPressTimestamp < buttonPressCooldown;
+}
+
+void CHLBot::MarkButtonPressed(CBaseEntity *button)
+{
+	m_lastPressedButton = button;
+	m_lastButtonPressTimestamp = gpGlobals->time;
+}
+
+bool CHLBot::TryCollectNearbyItem()
+{
+	if (IsAttacking() || GetTimeSinceLastSawEnemy() < 2.0f)
+		return false;
+
+	CBaseEntity *best = NULL;
+	float bestDistSq = 700.0f * 700.0f;
+
+	for (CBaseEntity *ent = UTIL_FindEntityInSphere(NULL, pev->origin, 700.0f); ent != NULL; ent = UTIL_FindEntityInSphere(ent, pev->origin, 700.0f))
+	{
+		const char *classname = STRING(ent->pev->classname);
+		bool useful = false;
+
+		if (strncmp(classname, "weapon_", 7) == 0)
+		{
+			CBasePlayerWeapon *weapon = static_cast<CBasePlayerWeapon *>(ent);
+			useful = (weapon == NULL || !HasWeaponID(weapon->m_iId) || !IsWeaponAmmoFull(weapon));
+		}
+		else if (strncmp(classname, "ammo_", 5) == 0)
+		{
+			useful = HasUsefulAmmoSpace(classname);
+		}
+		else if (FStrEq(classname, "item_battery"))
+		{
+			useful = (pev->armorvalue < 100 && (pev->weapons & (1 << WEAPON_SUIT)));
+		}
+		else if (FStrEq(classname, "item_healthkit"))
+		{
+			useful = (pev->health < 100);
+		}
+		else if (FStrEq(classname, "item_suit"))
+		{
+			useful = (pev->weapons & (1 << WEAPON_SUIT)) == 0;
+		}
+		else if (FStrEq(classname, "func_recharge"))
+		{
+			useful = (pev->armorvalue < 100 && (pev->weapons & (1 << WEAPON_SUIT)));
+		}
+		else if (FStrEq(classname, "func_healthcharger"))
+		{
+			useful = (pev->health < 100);
+		}
+		else if (FStrEq(classname, "func_button"))
+		{
+			useful = !IsButtonRecentlyPressed(ent);
+		}
+
+		if (!useful)
+			continue;
+
+		Vector spot = ent->Center();
+		if (!IsVisible(&spot, CHECK_FOV))
+			continue;
+
+		float distSq = (ent->pev->origin - pev->origin).LengthSquared();
+		if (distSq < bestDistSq)
+		{
+			best = ent;
+			bestDistSq = distSq;
+		}
+	}
+
+	if (best == NULL)
+		return false;
+
+	SetGoalEntity(best);
+	MoveTo(&best->pev->origin, FASTEST_ROUTE);
+	return true;
 }

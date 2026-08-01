@@ -377,6 +377,9 @@ public:
 	bool IsAttacking() const;								// returns true if bot is currently engaging a target
 
 	void MoveTo(const Vector *pos, RouteType route = SAFEST_ROUTE);				// move to potentially distant position
+	bool TryCollectNearbyItem();							// move to visible useful pickups, chargers, and buttons
+	bool IsButtonRecentlyPressed(CBaseEntity *button);
+	void MarkButtonPressed(CBaseEntity *button);
 	bool IsMovingTo() const;								// return true if we are in the MoveTo state
 #if 0
 	void PlantBomb();
@@ -645,6 +648,8 @@ public:
 	bool IsSniper() const;							// return true if we have a sniper rifle in our inventory
 	bool IsSniping() const;							// return true if we are actively sniping (moving to sniper spot or settled in)
 	bool IsUsingShotgun() const;						// returns true if using a shotgun
+	bool HasWeaponID(int weaponID) const;
+	bool HasUsefulAmmoSpace(const char *classname) const;
 	bool IsUsingMachinegun() const;						// returns true if using the big 'ol machinegun
 	void ThrowGrenade(const Vector *target);				// begin the process of throwing the grenade
 	bool IsThrowingGrenade() const;						// return true if we are in the process of throwing a grenade
@@ -675,6 +680,7 @@ public:
 	void AdjustSafeTime();							// called when enemy seen to adjust safe time for this round
 	void EXPORT BotTouch(CBaseEntity *other);
 	bool HasAnyAmmo(CBasePlayerWeapon *weapon) const;
+	bool IsWeaponAmmoFull(CBasePlayerWeapon *weapon) const;
 
 private:
 	friend class CHLBotManager;
@@ -734,6 +740,8 @@ private:
 	// navigation
 	Vector m_goalPosition;
 	EHANDLE m_goalEntity;
+	EHANDLE m_lastPressedButton;
+	float m_lastButtonPressTimestamp;
 	void MoveTowardsPosition(const Vector *pos);				// move towards position, independant of view angle
 	NOXREF void MoveAwayFromPosition(const Vector *pos);			// move away from position, independant of view angle
 	void StrafeAwayFromPosition(const Vector *pos);				// strafe (sidestep) away from position, independant of view angle
@@ -933,6 +941,7 @@ private:
 	void SilencerCheck();					// use silencer
 
 	float m_fireWeaponTimestamp;
+	float m_gaussNoiseChargeTimestamp;
 
 	// reaction time system
 	enum { MAX_ENEMY_QUEUE = 20 };

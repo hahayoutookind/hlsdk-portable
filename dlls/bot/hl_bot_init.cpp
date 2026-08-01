@@ -183,6 +183,7 @@ void CHLBot::ResetValues()
 	m_lastVictimID = 0;
 	m_isAimingAtEnemy = false;
 	m_fireWeaponTimestamp = 0.0f;
+	m_gaussNoiseChargeTimestamp = 0.0f;
 	m_equipTimer.Invalidate();
 
 	m_isFollowing = false;
@@ -259,6 +260,8 @@ void CHLBot::ResetValues()
 
 	// even though these are EHANDLEs, they need to be NULL-ed
 	m_goalEntity = NULL;
+	m_lastPressedButton = NULL;
+	m_lastButtonPressTimestamp = 0.0f;
 	m_avoid = NULL;
 	m_enemy = NULL;
 
