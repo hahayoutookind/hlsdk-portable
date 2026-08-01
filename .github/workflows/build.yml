@@ -39,7 +39,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.extract_branch.outputs.branch }}-android
-          path: android/app/build/outputs/apk/debug/bot-android.ap
+          path: android/app/build/outputs/apk/debug/bot-android.apk
   build:
     runs-on: ${{ matrix.os }}
     strategy:
