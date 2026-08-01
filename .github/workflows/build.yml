@@ -3,7 +3,7 @@ name: build
 on: [push, pull_request]
 
 jobs:
-android:
+  android:
     name: Android
     runs-on: ubuntu-latest
     steps:
@@ -39,8 +39,7 @@ android:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.extract_branch.outputs.branch }}-android
-          path: android/app/build/outputs/apk/debug/bot-android.apk
-
+          path: android/app/build/outputs/apk/debug/bot-android.ap
   build:
     runs-on: ${{ matrix.os }}
     strategy:
