@@ -90,7 +90,7 @@ void AttackState::OnEnter(CHLBot *me)
 	float skill = me->GetProfile()->GetSkill();
 
 	// tendency to dodge is proportional to skill
-	float dodgeChance = 80.0f * skill;
+	float dodgeChance = 90.0f * skill;
 
 	if (me->IsUsingKnife())
 	{
@@ -412,7 +412,7 @@ void AttackState::OnUpdate(CHLBot *me)
 
 	// do dodge behavior
 	// If sniping or crouching, stand still.
-	if (m_dodge && !me->IsUsingSniperRifle() && !m_crouchAndHold)
+	if (m_dodge && !me->IsUsingSniperRifle() )
 	{
 		Vector toEnemy = enemy->pev->origin - me->pev->origin;
 		float range = toEnemy.Length2D();
