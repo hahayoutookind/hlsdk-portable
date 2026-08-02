@@ -107,14 +107,14 @@ void CHLBot::FireWeaponAtEnemy()
 							// if our prey is facing away, backstab him!
 							if (!IsPlayerFacingMe(enemy))
 							{
-								SecondaryAttack();
+								PrimaryAttack();
 							}
 							else
 							{
 								// randomly choose primary and secondary attacks with knife
 								const float knifeStabChance = 33.3f;
 								if (RANDOM_FLOAT(0, 100) < knifeStabChance)
-									SecondaryAttack();
+									PrimaryAttack();
 								else
 									PrimaryAttack();
 							}
@@ -159,20 +159,6 @@ void CHLBot::FireWeaponAtEnemy()
 					{
 						// spray 'n pray if enemy is close, or we're not that good, or we're using the big machinegun
 						m_fireWeaponTimestamp = 0.0f;
-					}
-					else
-					{
-						const float distantTargetRange = 800.0f;
-						if (!IsUsingSniperRifle() && rangeToEnemy > distantTargetRange)
-						{
-							// if very far away, fire slowly for better accuracy
-							m_fireWeaponTimestamp = RANDOM_FLOAT(0.3f, 0.7f);
-						}
-						else
-						{
-							// fire short bursts for accuracy
-							m_fireWeaponTimestamp = RANDOM_FLOAT(0.15f, 0.5f); // 0.15f, 0.25f
-						}
 					}
 				}
 
