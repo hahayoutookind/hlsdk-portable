@@ -123,8 +123,8 @@ void CBot::SetBotColors(const char *name)
 {
 	unsigned int hash = HashName(name);
 
-	int top = hash % 101;
-	int bottom = (hash >> 8) % 101;
+	int top = hash % 255;
+	int bottom = (hash >> 8) % 255;
 
 	// converting to strings...
 	char topString[16];
