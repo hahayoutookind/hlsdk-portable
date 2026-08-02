@@ -46,12 +46,12 @@ endif()
 
 set (SVDLL_SOURCES
 	BMOD_flyingcrowbar.cpp
-	BMOD_snarkmine.cpp
 	BMOD_messaging.cpp
+	BMOD_snarkmine.cpp
 	BMOD_util.cpp
+	aflock.cpp
 	agrunt.cpp
 	airtank.cpp
-	aflock.cpp
 	animating.cpp
 	animation.cpp
 	apache.cpp
@@ -60,6 +60,38 @@ set (SVDLL_SOURCES
 	bigmomma.cpp
 	bloater.cpp
 	bmodels.cpp
+	bot/hl_bot.cpp
+	bot/hl_bot_chatter.cpp
+	bot/hl_bot_event.cpp
+	bot/hl_bot_init.cpp
+	bot/hl_bot_learn.cpp
+	bot/hl_bot_listen.cpp
+	bot/hl_bot_manager.cpp
+	bot/hl_bot_nav.cpp
+	bot/hl_bot_pathfind.cpp
+	bot/hl_bot_statemachine.cpp
+	bot/hl_bot_update.cpp
+	bot/hl_bot_vision.cpp
+	bot/hl_bot_weapon.cpp
+	bot/hl_gamestate.cpp
+	bot/manager/bot.cpp
+	bot/manager/bot_manager.cpp
+	bot/manager/bot_profile.cpp
+	bot/manager/bot_util.cpp
+	bot/manager/nav_area.cpp
+	bot/manager/nav_file.cpp
+	bot/manager/nav_node.cpp
+	bot/manager/nav_path.cpp
+	bot/mp_parse.cpp
+	bot/shared_util.cpp
+	bot/states/hl_bot_attack.cpp
+	bot/states/hl_bot_follow.cpp
+	bot/states/hl_bot_hide.cpp
+	bot/states/hl_bot_hunt.cpp
+	bot/states/hl_bot_idle.cpp
+	bot/states/hl_bot_investigate_noise.cpp
+	bot/states/hl_bot_move_to.cpp
+	bot/states/hl_bot_use_entity.cpp
 	bullsquid.cpp
 	buttons.cpp
 	cbase.cpp
@@ -135,6 +167,7 @@ set (SVDLL_SOURCES
 	spectator.cpp
 	squadmonster.cpp
 	squeakgrenade.cpp
+	stats.cpp
 	subs.cpp
 	talkmonster.cpp
 	teamplay_gamerules.cpp
