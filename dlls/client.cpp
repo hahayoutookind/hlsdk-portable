@@ -39,6 +39,7 @@
 #include "usercmd.h"
 #include "netadr.h"
 #include "pm_shared.h"
+#include "bot_exports.h"
 
 extern DLL_GLOBAL ULONG		g_ulModelIndexPlayer;
 extern DLL_GLOBAL BOOL		g_fGameOver;
@@ -756,6 +757,10 @@ void ServerActivate( edict_t *pEdictList, int edictCount, int clientMax )
 
 	// Link user messages here to make sure first client can get them...
 	LinkUserMessages();
+
+	InstallBotControl();
+	if( TheBots )
+		TheBots->ServerActivate();
 }
 
 /*
@@ -820,6 +825,9 @@ void StartFrame( void )
 
 	gpGlobals->teamplay = teamplay.value;
 	g_ulFrameCount++;
+
+	if( TheBots )
+		TheBots->StartFrame();
 }
 
 void ClientPrecache( void )

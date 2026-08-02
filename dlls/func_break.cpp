@@ -27,6 +27,7 @@
 #include "decals.h"
 #include "explode.h"
 #include "game.h"
+#include "bot_exports.h"
 
 extern DLL_GLOBAL Vector	g_vecAttackDir;
 
@@ -605,6 +606,9 @@ void CBreakable::Die( void )
 			break;
 		}
 		cFlag = BREAK_GLASS;
+
+		if( TheBots )
+			TheBots->OnEvent( EVENT_BREAK_GLASS, this );
 		break;
 	case matWood:
 		switch( RANDOM_LONG( 0, 1 ) )
@@ -617,6 +621,9 @@ void CBreakable::Die( void )
 			break;
 		}
 		cFlag = BREAK_WOOD;
+
+		if( TheBots )
+			TheBots->OnEvent( EVENT_BREAK_WOOD, this );
 		break;
 	case matComputer:
 	case matMetal:
@@ -630,6 +637,9 @@ void CBreakable::Die( void )
 			break;
 		}
 		cFlag = BREAK_METAL;
+
+		if( TheBots )
+			TheBots->OnEvent( EVENT_BREAK_METAL, this );
 		break;
 	case matFlesh:
 		switch( RANDOM_LONG( 0, 1 ) )
@@ -642,6 +652,9 @@ void CBreakable::Die( void )
 			break;
 		}
 		cFlag = BREAK_FLESH;
+
+		if( TheBots )
+			TheBots->OnEvent( EVENT_BREAK_CONCRETE, this );
 		break;
 	case matRocks:
 	case matCinderBlock:

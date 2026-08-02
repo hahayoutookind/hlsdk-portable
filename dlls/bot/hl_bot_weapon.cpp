@@ -1,0 +1,1056 @@
+#include "bot_common.h"
+
+// Fire our active weapon towards our current enemy
+// NOTE: Aiming our weapon is handled in RunBotUpkeep()
+
+void CHLBot::FireWeaponAtEnemy()
+{
+	CBasePlayer *enemy = GetEnemy();
+	if (enemy == NULL)
+	{
+		CBasePlayerWeapon *activeWeapon = GetActiveWeapon();
+		if (activeWeapon != NULL && activeWeapon->m_iId == WEAPON_GAUSS && IsNoiseHeard() && !CanSeeNoisePosition())
+		{
+			const Vector *noise = GetNoisePosition();
+			if (noise != NULL && HasAnyAmmo(activeWeapon))
+			{
+				Vector spot = *noise + Vector(0, 0, HalfHumanHeight);
+				SetLookAt("Gauss wallbang noise", &spot, PRIORITY_HIGH, 0.2f);
+
+				if (m_gaussNoiseChargeTimestamp <= 0.0f)
+					m_gaussNoiseChargeTimestamp = gpGlobals->time;
+
+				if (gpGlobals->time - m_gaussNoiseChargeTimestamp < 0.75f)
+				{
+					SecondaryAttack();
+				}
+				else
+				{
+					m_gaussNoiseChargeTimestamp = 0.0f;
+					ForgetNoise();
+				}
+			}
+		}
+		else
+		{
+			m_gaussNoiseChargeTimestamp = 0.0f;
+		}
+
+		StopRapidFire();
+		return;
+	}
+
+	if (IsUsingSniperRifle())
+	{
+		// if we're using a sniper rifle, don't fire until we are standing still, are zoomed in, and not rapidly moving our view
+		if (!IsNotMoving())
+		{
+			return;
+		}
+	}
+
+	if (gpGlobals->time > m_fireWeaponTimestamp && GetTimeSinceAcquiredCurrentEnemy() >= GetProfile()->GetAttackDelay() && GetTimeSinceAcquiredCurrentEnemy() >= GetSurpriseDelay())
+	{
+		ClearSurpriseDelay();
+
+		if (!(IsRecognizedEnemyProtectedByShield() && IsPlayerFacingMe(enemy))		// dont shoot at enemies behind shields
+			&& !IsActiveWeaponReloading()
+			&& !IsActiveWeaponClipEmpty()
+			&& IsEnemyVisible())
+		{
+			// we have a clear shot - pull trigger if we are aiming at enemy
+			Vector2D toAimSpot = (m_aimSpot - pev->origin).Make2D();
+			float rangeToEnemy = toAimSpot.NormalizeInPlace();
+
+			const float halfPI = (M_PI / 180.0f);
+			float yaw = pev->v_angle[ YAW ] * halfPI;
+
+			Vector2D dir(cos(yaw), sin(yaw));
+			float onTarget = DotProduct(toAimSpot, dir);
+
+			// aim more precisely with a sniper rifle
+			// because rifles' bullets spray, dont have to be very precise
+			const float halfSize = (IsUsingSniperRifle()) ? HalfHumanWidth : 2.0f * HalfHumanWidth;
+
+			// aiming tolerance depends on how close the target is - closer targets subtend larger angles
+			float aimTolerance = cos(atan(halfSize / rangeToEnemy));
+
+			if (onTarget > aimTolerance)
+			{
+				bool doAttack;
+
+				// if friendly fire is on, don't fire if a teammate is blocking our line of fire
+				if (TheHLBots()->AllowFriendlyFireDamage())
+				{
+					if (IsFriendInLineOfFire())
+						doAttack = false;
+					else
+						doAttack = true;
+				}
+				else
+				{
+					// fire freely
+					doAttack = true;
+				}
+
+				if (doAttack)
+				{
+					// if we are using a knife, only swing it if we're close
+					if (IsUsingKnife())
+					{
+						const float knifeRange = 75.0f; // 50.0f
+						if (rangeToEnemy < knifeRange)
+						{
+							// since we've given ourselves away - run!
+							ForceRun(5.0f);
+
+							// if our prey is facing away, backstab him!
+							if (!IsPlayerFacingMe(enemy))
+							{
+								PrimaryAttack();
+							}
+							else
+							{
+								// randomly choose primary and secondary attacks with knife
+								const float knifeStabChance = 33.3f;
+								if (RANDOM_FLOAT(0, 100) < knifeStabChance)
+									PrimaryAttack();
+								else
+									PrimaryAttack();
+							}
+						}
+					}
+					else if (IsUsingShotgun() && rangeToEnemy < 200.0f)
+					{
+						SecondaryAttack();
+					}
+					else if (IsUsingPistol())
+					{
+						SecondaryAttack();
+					}
+					else
+					{
+						PrimaryAttack();
+					}
+				}
+
+				if (IsUsingPistol())
+				{
+					// high-skill bots fire their pistols quickly at close range
+					const float closePistolRange = 999999.9f;
+					if (GetProfile()->GetSkill() > 0.75f && rangeToEnemy < closePistolRange)
+					{
+						StartRapidFire();
+
+						// fire as fast as possible
+						m_fireWeaponTimestamp = 0.0f;
+					}
+					else
+					{
+						// fire somewhat quickly
+						m_fireWeaponTimestamp = RANDOM_FLOAT(0.15f, 0.4f);
+					}
+				}
+				// not using a pistol
+				else
+				{
+					const float sprayRange = 400.0f;
+					if (GetProfile()->GetSkill() < 0.5f || rangeToEnemy < sprayRange || IsUsingMachinegun())
+					{
+						// spray 'n pray if enemy is close, or we're not that good, or we're using the big machinegun
+						m_fireWeaponTimestamp = 0.0f;
+					}
+				}
+
+				// subtract system latency
+				m_fireWeaponTimestamp -= g_flBotFullThinkInterval;
+				m_fireWeaponTimestamp += gpGlobals->time;
+			}
+		}
+	}
+}
+
+// Set the current aim offset using given accuracy (1.0 = perfect aim, 0.0f = terrible aim)
+
+void CHLBot::SetAimOffset(float accuracy)
+{
+	// if our accuracy is less than perfect, it will improve as we "focus in" while not rotating our view
+	if (accuracy < 1.0f)
+	{
+		// if we moved our view, reset our "focus" mechanism
+		if (IsViewMoving(100.0f))
+		{
+			m_aimSpreadTimestamp = gpGlobals->time;
+		}
+
+		// focusTime is the time it takes for a bot to "focus in" for very good aim, from 2 to 5 seconds
+		const float focusTime = Q_max(5.0f * (1.0f - accuracy), 2.0f);
+
+		float focusInterval = gpGlobals->time - m_aimSpreadTimestamp;
+		float focusAccuracy = focusInterval / focusTime;
+
+		// limit how much "focus" will help
+		const float maxFocusAccuracy = 0.75f;
+
+		if (focusAccuracy > maxFocusAccuracy)
+			focusAccuracy = maxFocusAccuracy;
+
+		accuracy = Q_max(accuracy, focusAccuracy);
+	}
+
+	PrintIfWatched("Accuracy = %4.3f\n", accuracy);
+
+	float range = (m_lastEnemyPosition - pev->origin).Length();
+	const float maxOffset = range * 0.1;
+	float error = maxOffset * (1 - accuracy);
+
+	m_aimOffsetGoal[0] = RANDOM_FLOAT(-error, error);
+	m_aimOffsetGoal[1] = RANDOM_FLOAT(-error, error);
+	m_aimOffsetGoal[2] = RANDOM_FLOAT(-error, error);
+
+	// define time when aim offset will automatically be updated
+	m_aimOffsetTimestamp = gpGlobals->time + RANDOM_FLOAT(0.25, 1);
+}
+
+// Wiggle aim error based on GetProfile()->GetSkill()
+
+void CHLBot::UpdateAimOffset()
+{
+	if (gpGlobals->time >= m_aimOffsetTimestamp)
+	{
+		SetAimOffset(GetProfile()->GetSkill());
+	}
+
+	// move current offset towards goal offset
+	Vector d = m_aimOffsetGoal - m_aimOffset;
+	const float stiffness = 0.1f;
+
+	m_aimOffset.x += stiffness * d.x;
+	m_aimOffset.y += stiffness * d.y;
+	m_aimOffset.z += stiffness * d.z;
+}
+
+// Change our zoom level to be appropriate for the given range.
+// Return true if the zoom level changed.
+
+bool CHLBot::AdjustZoom(float range)
+{
+	bool adjustZoom = false;
+
+	if (IsUsingSniperRifle())
+	{
+		// NOTE: This must be less than sniperMinRange in AttackState
+		const float sniperZoomRange = 300.0f; //150.0f
+		const float sniperFarZoomRange = 1500.0f;
+
+		// if range is too close, don't zoom
+		if (range <= sniperZoomRange)
+		{
+			// zoom out
+			if (GetZoomLevel() != NO_ZOOM)
+			{
+				adjustZoom = true;
+			}
+		}
+		else if (range < sniperFarZoomRange)
+		{
+			// maintain low zoom
+			if (GetZoomLevel() != LOW_ZOOM)
+			{
+				adjustZoom = true;
+			}
+		}
+		else
+		{
+			// maintain high zoom
+			if (GetZoomLevel() != HIGH_ZOOM)
+			{
+				adjustZoom = true;
+			}
+		}
+	}
+	else
+	{
+		// zoom out
+		if (GetZoomLevel() != NO_ZOOM)
+		{
+			adjustZoom = true;
+		}
+	}
+
+	if (adjustZoom)
+	{
+		SecondaryAttack();
+	}
+
+	return adjustZoom;
+}
+
+// Return true if the given weapon is a sniper rifle
+
+bool isSniperRifle(CBasePlayerItem *item)
+{
+	switch (item->m_iId)
+	{
+	case WEAPON_CROSSBOW:
+		return true;
+
+	default:
+		return false;
+	}
+}
+
+bool CHLBot::IsUsingAWP() const
+{
+	CBasePlayerWeapon *weapon = GetActiveWeapon();
+
+	if (weapon != NULL && weapon->m_iId == WEAPON_CROSSBOW)
+		return true;
+
+	return false;
+}
+
+// Returns true if we are using a weapon with a removable silencer
+
+bool CHLBot::DoesActiveWeaponHaveSilencer() const
+{
+	CBasePlayerWeapon *weapon = GetActiveWeapon();
+
+	if (weapon == NULL)
+		return false;
+
+	//if (weapon->m_iId == WEAPON_M4A1 || weapon->m_iId == WEAPON_USP)
+	//	return true;
+
+	return false;
+}
+
+// Return true if we are using a sniper rifle
+
+bool CHLBot::IsUsingSniperRifle() const
+{
+	CBasePlayerWeapon *weapon = GetActiveWeapon();
+
+	if (weapon != NULL && isSniperRifle(weapon))
+		return true;
+
+	return false;
+}
+
+// Return true if we have a sniper rifle in our inventory
+
+bool CHLBot::IsSniper() const
+{
+	for (int i = 0; i < MAX_ITEM_TYPES; ++i)
+	{
+		CBasePlayerItem *item = m_rgpPlayerItems[i];
+
+		while (item != NULL)
+		{
+			if (isSniperRifle(item))
+				return true;
+
+			item = item->m_pNext;
+		}
+	}
+
+	return false;
+}
+
+// Return true if we are actively sniping (moving to sniper spot or settled in)
+
+bool CHLBot::IsSniping() const
+{
+	if (GetTask() == MOVE_TO_SNIPER_SPOT || GetTask() == SNIPING)
+		return true;
+
+	return false;
+}
+
+// Return true if we are using a shotgun
+
+bool CHLBot::IsUsingShotgun() const
+{
+	CBasePlayerWeapon *weapon = GetActiveWeapon();
+
+	if (weapon == NULL)
+		return false;
+
+	if (weapon->m_iId == WEAPON_SHOTGUN)
+		return true;
+
+	return false;
+}
+
+// Returns true if using the big 'ol machinegun
+
+bool CHLBot::IsUsingMachinegun() const
+{
+	CBasePlayerWeapon *weapon = GetActiveWeapon();
+
+	if (weapon != NULL && weapon->m_iId == WEAPON_MP5)
+		return true;
+
+	return false;
+}
+
+// Return true if primary weapon doesn't exist or is totally out of ammo
+
+bool CHLBot::IsPrimaryWeaponEmpty() const
+{
+	CBasePlayerWeapon *weapon = static_cast<CBasePlayerWeapon *>(m_rgpPlayerItems[ 2 ]);
+
+	if (weapon == NULL)
+		return true;
+
+	// check if gun has any ammo left
+	if (HasAnyAmmo(weapon))
+		return false;
+
+	return true;
+}
+
+// Return true if pistol doesn't exist or is totally out of ammo
+
+bool CHLBot::IsPistolEmpty() const
+{
+	CBasePlayerWeapon *weapon = static_cast<CBasePlayerWeapon *>(m_rgpPlayerItems[ 1 ]);
+
+	if (weapon == NULL)
+		return true;
+
+	// check if gun has any ammo left
+	if (HasAnyAmmo(weapon))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+// Equip the given item
+
+bool CHLBot::DoEquip(CBasePlayerWeapon *gun)
+{
+	if (gun == NULL)
+		return false;
+
+	// check if weapon has any ammo left
+	if (!HasAnyAmmo(gun))
+		return false;
+
+	// equip it
+	SelectItem(STRING(gun->pev->classname));
+	m_equipTimer.Start();
+
+	return true;
+}
+
+// throttle how often equipping is allowed
+const float minEquipInterval = 5.0f;
+
+// Equip the best weapon we are carrying that has ammo
+
+void CHLBot::EquipBestWeapon(bool mustEquip)
+{
+	if (!mustEquip && m_equipTimer.GetElapsedTime() < minEquipInterval)
+		return;
+
+	static const int preference[] =
+	{
+		WEAPON_RPG, WEAPON_GAUSS, WEAPON_EGON, WEAPON_CROSSBOW, WEAPON_MP5,
+		WEAPON_PYTHON, WEAPON_SHOTGUN, WEAPON_HORNETGUN, WEAPON_GLOCK, WEAPON_CROWBAR
+	};
+
+	for (int p = 0; p < ARRAYSIZE(preference); ++p)
+	{
+		for (int i = 0; i < MAX_ITEM_TYPES; ++i)
+		{
+			for (CBasePlayerItem *item = m_rgpPlayerItems[i]; item != NULL; item = item->m_pNext)
+			{
+				CBasePlayerWeapon *weapon = static_cast<CBasePlayerWeapon *>(item);
+				if (weapon->m_iId == preference[p] && DoEquip(weapon))
+					return;
+			}
+		}
+	}
+}
+
+// Equip our pistol
+
+void CHLBot::EquipPistol()
+{
+	// throttle how often equipping is allowed
+	if (m_equipTimer.GetElapsedTime() < minEquipInterval)
+		return;
+
+	if (TheHLBots()->AllowPistols() && !IsUsingPistol())
+	{
+		CBasePlayerWeapon *pistol = static_cast<CBasePlayerWeapon *>(m_rgpPlayerItems[ 1 ]);
+		DoEquip(pistol);
+	}
+}
+
+// Equip the knife
+
+void CHLBot::EquipKnife()
+{
+	if (!IsUsingKnife())
+	{
+		CBasePlayerWeapon *knife = static_cast<CBasePlayerWeapon *>(m_rgpPlayerItems[ 0 ]);
+		if (knife != NULL)
+		{
+			SelectItem(STRING(knife->pev->classname));
+		}
+	}
+}
+
+// Return true if we have a grenade in our inventory
+
+bool CHLBot::HasGrenade() const
+{
+	CBasePlayerWeapon *grenade = static_cast<CBasePlayerWeapon *>(m_rgpPlayerItems[ 4 ]);
+	return grenade != NULL;
+}
+
+// Equip a grenade, return false if we cant
+
+bool CHLBot::EquipGrenade(bool noSmoke)
+{
+	// snipers don't use grenades
+	if (IsSniper())
+		return false;
+
+	if (IsUsingGrenade())
+		return true;
+
+	if (HasGrenade())
+	{
+		CBasePlayerWeapon *grenade = static_cast<CBasePlayerWeapon *>(m_rgpPlayerItems[ 4 ]);
+
+		if (grenade != NULL)
+		{
+			//if (noSmoke && grenade->m_iId == WEAPON_SMOKEGRENADE)
+				//return false;
+
+			SelectItem(STRING(grenade->pev->classname));
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// Returns true if we have knife equipped
+
+bool CHLBot::IsUsingKnife() const
+{
+	CBasePlayerWeapon *weapon = GetActiveWeapon();
+
+	if (weapon != NULL && weapon->m_iId == WEAPON_CROWBAR)
+		return true;
+
+	return false;
+}
+
+// Returns true if we have pistol equipped
+
+bool CHLBot::IsUsingPistol() const
+{
+	CBasePlayerWeapon *weapon = GetActiveWeapon();
+
+	if (weapon != NULL && weapon->m_iId == WEAPON_GLOCK)
+		return true;
+
+	return false;
+}
+
+// Returns true if we have a grenade equipped
+
+bool CHLBot::IsUsingGrenade() const
+{
+	CBasePlayerWeapon *weapon = GetActiveWeapon();
+
+	if (weapon == NULL)
+		return false;
+
+	if (weapon->m_iId == WEAPON_HANDGRENADE )
+		return true;
+
+	return false;
+}
+
+bool CHLBot::IsUsingHEGrenade() const
+{
+	CBasePlayerWeapon *weapon = GetActiveWeapon();
+
+	if (weapon != NULL && weapon->m_iId == WEAPON_HANDGRENADE)
+		return true;
+
+	return false;
+}
+
+// Begin the process of throwing the grenade
+
+void CHLBot::ThrowGrenade(const Vector *target)
+{
+	if (IsUsingGrenade() && !m_isWaitingToTossGrenade)
+	{
+		const float angleTolerance = 1.0f;
+
+		SetLookAt("GrenadeThrow", target, PRIORITY_UNINTERRUPTABLE, 3.0f, false, angleTolerance);
+
+		m_isWaitingToTossGrenade = true;
+		m_tossGrenadeTimer.Start(3.0f);
+	}
+}
+
+// Find spot to throw grenade ahead of us and "around the corner" along our path
+
+bool CHLBot::FindGrenadeTossPathTarget(Vector *pos)
+{
+	if (!HasPath())
+		return false;
+
+	// find farthest point we can see on the path
+	int i;
+	for (i = m_pathIndex; i < m_pathLength; ++i)
+	{
+		if (!FVisible(m_path[i].pos + Vector(0, 0, HalfHumanHeight)))
+			break;
+	}
+
+	if (i == m_pathIndex)
+		return false;
+
+	// find exact spot where we lose sight
+	Vector dir = m_path[i].pos - m_path[i - 1].pos;
+	float length = dir.NormalizeInPlace();
+
+	const float inc = 25.0f;
+	Vector p;
+	Vector visibleSpot = m_path[i - 1].pos;
+	for (float t = 0.0f; t < length; t += inc)
+	{
+		p = m_path[i - 1].pos + t * dir;
+		p.z += HalfHumanHeight;
+
+		if (!FVisible(p))
+			break;
+
+		visibleSpot = p;
+	}
+
+	// massage the location a bit
+	visibleSpot.z += 10.0f;
+
+	const float bufferRange = 50.0f;
+	TraceResult result;
+	Vector check;
+
+	// check +X
+	check = visibleSpot + Vector(999.9f, 0, 0);
+	UTIL_TraceLine(visibleSpot, check, dont_ignore_monsters, ignore_glass, ENT(pev), &result);
+
+	if (result.flFraction < 1.0f)
+	{
+		float range = result.vecEndPos.x - visibleSpot.x;
+		if (range < bufferRange)
+		{
+			visibleSpot.x = result.vecEndPos.x - bufferRange;
+		}
+	}
+
+	// check -X
+	check = visibleSpot + Vector(-999.9f, 0, 0);
+	UTIL_TraceLine(visibleSpot, check, dont_ignore_monsters, ignore_glass, ENT(pev), &result);
+
+	if (result.flFraction < 1.0f)
+	{
+		float range = visibleSpot.x - result.vecEndPos.x;
+		if (range < bufferRange)
+		{
+			visibleSpot.x = result.vecEndPos.x + bufferRange;
+		}
+	}
+
+	// check +Y
+	check = visibleSpot + Vector(0, 999.9f, 0);
+	UTIL_TraceLine(visibleSpot, check, dont_ignore_monsters, ignore_glass, ENT(pev), &result);
+
+	if (result.flFraction < 1.0f)
+	{
+		float range = result.vecEndPos.y - visibleSpot.y;
+		if (range < bufferRange)
+		{
+			visibleSpot.y = result.vecEndPos.y - bufferRange;
+		}
+	}
+
+	// check -Y
+	check = visibleSpot + Vector(0, -999.9f, 0);
+	UTIL_TraceLine(visibleSpot, check, dont_ignore_monsters, ignore_glass, ENT(pev), &result);
+
+	if (result.flFraction < 1.0f)
+	{
+		float range = visibleSpot.y - result.vecEndPos.y;
+		if (range < bufferRange)
+		{
+			visibleSpot.y = result.vecEndPos.y + bufferRange;
+		}
+	}
+
+	*pos = visibleSpot;
+	return true;
+}
+
+// Reload our weapon if we must
+
+void CHLBot::ReloadCheck()
+{
+	const float safeReloadWaitTime = 3.0f;
+	const float reloadAmmoRatio = 0.6f;
+
+	// don't bother to reload if there are no enemies left
+	if (GetEnemiesRemaining() == 0)
+		return;
+
+	if (IsActiveWeaponReloading())
+		return;
+
+	if (IsActiveWeaponClipEmpty())
+	{
+#if 0
+		// high-skill players switch to pistol instead of reloading during combat
+		if (GetProfile()->GetSkill() > 0.5f && IsAttacking())
+		{
+			if (!GetActiveWeapon()->IsPistol() && !IsPistolEmpty())
+			{
+				// switch to pistol instead of reloading
+				EquipPistol();
+				return;
+			}
+		}
+#endif
+	}
+	else if (GetTimeSinceLastSawEnemy() > safeReloadWaitTime && GetActiveWeaponAmmoRatio() <= reloadAmmoRatio)
+	{
+		// high-skill players use all their ammo and switch to pistol instead of reloading during combat
+		if (GetProfile()->GetSkill() > 0.5f && IsAttacking())
+			return;
+	}
+	else
+	{
+		// do not need to reload
+		return;
+	}
+
+	// don't reload the AWP until it is totally out of ammo
+	if (IsUsingAWP() && !IsActiveWeaponClipEmpty())
+		return;
+
+	Reload();
+
+	// move to cover to reload if there are enemies nearby
+	if (GetNearbyEnemyCount())
+	{
+		// avoid enemies while reloading (above 0.75 skill always hide to reload)
+		const float hideChance = 25.0f + 100.0f * GetProfile()->GetSkill();
+
+		if (!IsHiding() && RANDOM_FLOAT(0.0f, 100.0f) < hideChance)
+		{
+			const float safeTime = 5.0f;
+			if (GetTimeSinceLastSawEnemy() < safeTime)
+			{
+				PrintIfWatched("Retreating to a safe spot to reload!\n");
+				const Vector *spot = FindNearbyRetreatSpot(this, 1000.0f);
+				if (spot != NULL)
+				{
+					// ignore enemies for a second to give us time to hide
+					// reaching our hiding spot clears our disposition
+					IgnoreEnemies(10.0f);
+
+					Run();
+					StandUp();
+					Hide(spot, 0.0f);
+				}
+			}
+		}
+	}
+}
+
+// Silence/unsilence our weapon if we must
+
+void CHLBot::SilencerCheck()
+{
+	// longer than reload check because reloading should take precedence
+	const float safeSilencerWaitTime = 3.5f;
+
+	if (IsActiveWeaponReloading() || IsAttacking())
+		return;
+
+	// M4A1 and USP are the only weapons with removable silencers
+	if (!DoesActiveWeaponHaveSilencer())
+		return;
+
+	if (GetTimeSinceLastSawEnemy() < safeSilencerWaitTime)
+		return;
+   
+	// don't touch the silencer if there are enemies nearby
+	if (GetNearbyEnemyCount() == 0)
+	{
+		CBasePlayerWeapon *myGun = GetActiveWeapon();
+		if (myGun == NULL)
+			return;
+
+		//bool isSilencerOn = (myGun->m_iWeaponState & (WPNSTATE_M4A1_SILENCED | WPNSTATE_USP_SILENCED)) != 0;
+
+		if (myGun->m_flNextSecondaryAttack >= gpGlobals->time)
+			return;
+
+		// equip silencer if we want to and we don't have a shield.
+		/*if (isSilencerOn != (GetProfile()->PrefersSilencer() || GetProfile()->GetSkill() > 0.7f) && !HasShield())
+		{
+			PrintIfWatched("%s silencer!\n", (isSilencerOn) ? "Unequipping" : "Equipping");
+			myGun->SecondaryAttack();
+		}*/
+	}
+}
+
+// Invoked when in contact with a CWeaponBox
+
+void CHLBot::OnTouchingWeapon(CWeaponBox *box)
+{
+	CBasePlayerItem *droppedGun = static_cast<CBasePlayerItem *>(box->m_rgpPlayerItems[ 2 ]);
+
+	// right now we only care about primary weapons on the ground
+	if (droppedGun != NULL)
+	{
+		CBasePlayerWeapon *myGun = static_cast<CBasePlayerWeapon *>(m_rgpPlayerItems[ 2 ]);
+
+		// if the gun on the ground is the same one we have, dont bother
+		if (myGun != NULL && droppedGun->m_iId != myGun->m_iId)
+		{
+			// if we don't have a weapon preference, give up
+			if (GetProfile()->HasPrimaryPreference())
+			{
+				// don't change weapons if we've seen enemies recently
+				const float safeTime = 2.5f;
+				if (GetTimeSinceLastSawEnemy() >= safeTime)
+				{
+					// we have a primary weapon - drop it if the one on the ground is better
+					for (int i = 0; i < GetProfile()->GetWeaponPreferenceCount(); ++i)
+					{
+						int prefID = GetProfile()->GetWeaponPreference(i);
+
+						//if (!IsPrimaryWeapon(prefID))
+						//	continue;
+
+						// if the gun we are using is more desirable, give up
+						if (prefID == myGun->m_iId)
+							break;
+
+						if (prefID == droppedGun->m_iId)
+						{
+							// the gun on the ground is better than the one we have - drop our gun
+							//DropPrimary(this);
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// Return true if a friend is in our weapon's way
+// TODO: Check more rays for safety.
+
+bool CHLBot::IsFriendInLineOfFire()
+{
+	UTIL_MakeVectors(pev->punchangle + pev->v_angle);
+
+	// compute the unit vector along our view
+	Vector aimDir = gpGlobals->v_forward;
+	Vector target = GetGunPosition();
+
+	// trace the bullet's path
+	TraceResult result;
+	UTIL_TraceLine(GetGunPosition(), target + 10000.0f * aimDir, dont_ignore_monsters, ignore_glass, ENT(pev), &result);
+
+	if (result.pHit != NULL)
+	{
+		CBaseEntity *victim = CBaseEntity::Instance(result.pHit);
+
+		if (victim != NULL && victim->IsPlayer() && victim->IsAlive())
+		{
+			CBasePlayer *player = static_cast<CBasePlayer *>(victim);
+
+//			if (player->m_iTeam == m_iTeam)
+//				return true;
+		}
+	}
+
+	return false;
+}
+
+// Return line-of-sight distance to obstacle along weapon fire ray
+// TODO: Re-use this computation with IsFriendInLineOfFire()
+
+float CHLBot::ComputeWeaponSightRange()
+{
+	UTIL_MakeVectors(pev->punchangle + pev->v_angle);
+
+	// compute the unit vector along our view
+	Vector aimDir = gpGlobals->v_forward;
+	Vector target = GetGunPosition();
+
+	// trace the bullet's path
+	TraceResult result;
+	UTIL_TraceLine(GetGunPosition(), target + 10000.0f * aimDir, dont_ignore_monsters, ignore_glass, ENT(pev), &result);
+
+	return (GetGunPosition() - result.vecEndPos).Length();
+}
+
+bool CHLBot::HasWeaponID(int weaponID) const
+{
+	return (pev->weapons & (1 << weaponID)) != 0;
+}
+
+bool CHLBot::IsWeaponAmmoFull(CBasePlayerWeapon *weapon) const
+{
+	if (weapon == NULL)
+		return true;
+
+	if (weapon->m_iPrimaryAmmoType >= 0 && weapon->iMaxAmmo1() > 0 && m_rgAmmo[weapon->m_iPrimaryAmmoType] < weapon->iMaxAmmo1())
+		return false;
+
+	if (weapon->m_iSecondaryAmmoType >= 0 && weapon->iMaxAmmo2() > 0 && m_rgAmmo[weapon->m_iSecondaryAmmoType] < weapon->iMaxAmmo2())
+		return false;
+
+	return true;
+}
+
+bool CHLBot::HasUsefulAmmoSpace(const char *classname) const
+{
+	struct AmmoMap
+	{
+		const char *classname;
+		const char *ammoName;
+	};
+
+	static const AmmoMap ammoMap[] =
+	{
+		{ "ammo_glockclip", "9mm" },
+		{ "ammo_9mmclip", "9mm" },
+		{ "ammo_mp5clip", "9mm" },
+		{ "ammo_9mmAR", "9mm" },
+		{ "ammo_9mmbox", "9mm" },
+		{ "ammo_mp5grenades", "ARgrenades" },
+		{ "ammo_ARgrenades", "ARgrenades" },
+		{ "ammo_357", "357" },
+		{ "ammo_python", "357" },
+		{ "ammo_buckshot", "buckshot" },
+		{ "ammo_gaussclip", "uranium" },
+		{ "ammo_egonclip", "uranium" },
+		{ "ammo_rpgclip", "rockets" },
+		{ "ammo_crossbow", "bolts" },
+		{ "ammo_9mmARgrenades", "ARgrenades" },
+	};
+
+	for (int i = 0; i < ARRAYSIZE(ammoMap); ++i)
+	{
+		if (!Q_stricmp(classname, ammoMap[i].classname))
+		{
+			int ammoIndex = GetAmmoIndex(ammoMap[i].ammoName);
+			if (ammoIndex < 0)
+				return true;
+
+			return m_rgAmmo[ammoIndex] < MaxAmmoCarry(MAKE_STRING(ammoMap[i].ammoName));
+		}
+	}
+
+	return true;
+}
+
+bool CHLBot::IsButtonRecentlyPressed(CBaseEntity *button)
+{
+	const float buttonPressCooldown = 3.0f;
+	return button != NULL && m_lastPressedButton == button && gpGlobals->time - m_lastButtonPressTimestamp < buttonPressCooldown;
+}
+
+void CHLBot::MarkButtonPressed(CBaseEntity *button)
+{
+	m_lastPressedButton = button;
+	m_lastButtonPressTimestamp = gpGlobals->time;
+}
+
+bool CHLBot::TryCollectNearbyItem()
+{
+	if (IsAttacking() || GetTimeSinceLastSawEnemy() < 2.0f)
+		return false;
+
+	CBaseEntity *best = NULL;
+	float bestDistSq = 700.0f * 700.0f;
+
+	for (CBaseEntity *ent = UTIL_FindEntityInSphere(NULL, pev->origin, 700.0f); ent != NULL; ent = UTIL_FindEntityInSphere(ent, pev->origin, 700.0f))
+	{
+		const char *classname = STRING(ent->pev->classname);
+		bool useful = false;
+
+		if (strncmp(classname, "weapon_", 7) == 0)
+		{
+			CBasePlayerWeapon *weapon = static_cast<CBasePlayerWeapon *>(ent);
+			useful = (weapon == NULL || !HasWeaponID(weapon->m_iId) || !IsWeaponAmmoFull(weapon));
+		}
+		else if (strncmp(classname, "ammo_", 5) == 0)
+		{
+			useful = HasUsefulAmmoSpace(classname);
+		}
+		else if (FStrEq(classname, "item_battery"))
+		{
+			useful = (pev->armorvalue < 100 && (pev->weapons & (1 << WEAPON_SUIT)));
+		}
+		else if (FStrEq(classname, "item_healthkit"))
+		{
+			useful = (pev->health < 100);
+		}
+		else if (FStrEq(classname, "item_suit"))
+		{
+			useful = (pev->weapons & (1 << WEAPON_SUIT)) == 0;
+		}
+		else if (FStrEq(classname, "func_recharge"))
+		{
+			useful = (pev->armorvalue < 100 && (pev->weapons & (1 << WEAPON_SUIT)));
+		}
+		else if (FStrEq(classname, "func_healthcharger"))
+		{
+			useful = (pev->health < 100);
+		}
+		else if (FStrEq(classname, "func_button"))
+		{
+			useful = !IsButtonRecentlyPressed(ent);
+		}
+
+		if (!useful)
+			continue;
+
+		Vector spot = ent->Center();
+		if (!IsVisible(&spot, CHECK_FOV))
+			continue;
+
+		float distSq = (ent->pev->origin - pev->origin).LengthSquared();
+		if (distSq < bestDistSq)
+		{
+			best = ent;
+			bestDistSq = distSq;
+		}
+	}
+
+	if (best == NULL)
+		return false;
+
+	SetGoalEntity(best);
+	MoveTo(&best->pev->origin, FASTEST_ROUTE);
+	return true;
+}
