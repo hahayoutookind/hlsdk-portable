@@ -1090,12 +1090,12 @@ bool BotStatement::Update()
 //						me->StartVoiceFeedback(duration + 1.0f);
 					}
 					// print to the sending client
-					char message[256];
+/*					char message[256];
 					Q_snprintf( message, 256, "[bot] %s (radio): %s", STRING( me->pev->netname), phrase->GetName() );
 					MESSAGE_BEGIN( MSG_ALL, gmsgSayText, NULL );
 						WRITE_BYTE( ENTINDEX(me->edict()) );
 						WRITE_STRING( message );
-					MESSAGE_END();
+					MESSAGE_END();*/
 				}
 			}
 
