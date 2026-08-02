@@ -496,6 +496,9 @@ public:
 	void IncreaseMorale();
 	void DecreaseMorale();
 
+	CountdownTimer m_respawnTimer;    // schedules delayed respawn
+	bool m_isRespawnScheduled;
+
 	// listening for noises
 	bool IsNoiseHeard() const;								// return true if we have heard a noise
 	bool ShouldInvestigateNoise(float *retNoiseDist = NULL);

@@ -148,6 +148,9 @@ void CHLBot::ResetValues()
 	m_currentArea = NULL;
 	m_lastKnownArea = NULL;
 
+	m_isRespawnScheduled = false;
+	m_respawnTimer.Invalidate();
+
 	m_avoidFriendTimer.Invalidate();
 	m_isFriendInTheWay = false;
 	m_isWaitingBehindFriend = false;

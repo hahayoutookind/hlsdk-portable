@@ -300,7 +300,20 @@ bool CHLBot::IsBusy() const
 
 void CHLBot::BotDeathThink()
 {
-	respawn( pev, !( m_afPhysicsFlags & PFLAG_OBSERVER ) );
+	if (!m_isRespawnScheduled)
+	{
+		m_respawnTimer.Start(1.5f);     // schedule for 1.5 seconds
+		m_isRespawnScheduled = true;
+		return;
+	}
+
+	if (!m_respawnTimer.IsElapsed())
+		return;
+
+	respawn(pev, !( m_afPhysicsFlags & PFLAG_OBSERVER ));
+
+	m_isRespawnScheduled = false;
+	m_respawnTimer.Invalidate(); // optional, if available
 }
 
 CBasePlayer *CHLBot::FindNearbyPlayer()
