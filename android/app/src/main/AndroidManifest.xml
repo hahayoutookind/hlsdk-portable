@@ -4,7 +4,7 @@
 
     <application
         android:forceQueryable="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_launcher"
         android:label="ZBot"
         tools:targetApi="r">
 
