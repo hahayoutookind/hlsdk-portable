@@ -28,11 +28,11 @@ cvar_t fragsleft	= { "mp_fragsleft","0", FCVAR_SERVER | FCVAR_UNLOGGED };	  // D
 cvar_t timeleft		= { "mp_timeleft","0" , FCVAR_SERVER | FCVAR_UNLOGGED };	  // "      "
 
 // multiplayer server rules
-cvar_t teamplay		= { "mp_teamplay","0", FCVAR_SERVER };
+cvar_t teamplay		= { "mp_teamplay","1", FCVAR_SERVER };
 cvar_t fraglimit	= { "mp_fraglimit","0", FCVAR_SERVER };
-cvar_t timelimit	= { "mp_timelimit","0", FCVAR_SERVER };
+cvar_t timelimit	= { "mp_timelimit","5", FCVAR_SERVER };
 cvar_t friendlyfire	= { "mp_friendlyfire","0", FCVAR_SERVER };
-cvar_t falldamage	= { "mp_falldamage","0", FCVAR_SERVER };
+cvar_t falldamage	= { "mp_falldamage","1", FCVAR_SERVER };
 cvar_t weaponstay	= { "mp_weaponstay","0", FCVAR_SERVER };
 cvar_t selfgauss	= { "selfgauss", "0", FCVAR_SERVER };
 cvar_t chargerfix	= { "chargerfix", "1", FCVAR_SERVER };
@@ -42,16 +42,16 @@ cvar_t monsteryawspeedfix	= { "monsteryawspeedfix", "1", FCVAR_SERVER };
 cvar_t corpsephysics = { "corpsephysics", "0", FCVAR_SERVER };
 cvar_t pushablemode = { "pushablemode", "0", FCVAR_SERVER };
 cvar_t forcerespawn	= { "mp_forcerespawn","1", FCVAR_SERVER };
-cvar_t flashlight	= { "mp_flashlight","0", FCVAR_SERVER };
+cvar_t flashlight	= { "mp_flashlight","1", FCVAR_SERVER };
 cvar_t aimcrosshair	= { "mp_autocrosshair","1", FCVAR_SERVER };
 cvar_t decalfrequency	= { "decalfrequency","30", FCVAR_SERVER };
-cvar_t teamlist		= { "mp_teamlist","hgrunt;scientist", FCVAR_SERVER };
+cvar_t teamlist		= { "mp_teamlist","barney;zombie", FCVAR_SERVER };
 cvar_t teamoverride	= { "mp_teamoverride","1" };
 cvar_t defaultteam	= { "mp_defaultteam","0" };
-cvar_t allowmonsters	= { "mp_allowmonsters","0", FCVAR_SERVER };
+cvar_t allowmonsters	= { "mp_allowmonsters","1", FCVAR_SERVER };
 cvar_t bhopcap		= { "mp_bhopcap", "1", FCVAR_SERVER };
 
-cvar_t allow_spectators = { "allow_spectators", "0", FCVAR_SERVER };	// 0 prevents players from being spectators
+cvar_t allow_spectators = { "allow_spectators", "1", FCVAR_SERVER };	// 0 prevents players from being spectators
 cvar_t multibyte_only = { "mp_multibyte_only", "0", FCVAR_SERVER };
 
 cvar_t mp_chattime	= { "mp_chattime","10", FCVAR_SERVER };
