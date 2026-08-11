@@ -41,9 +41,9 @@ extern int gmsgServerName;
 
 extern int g_teamplay;
 
-#define ITEM_RESPAWN_TIME	30
-#define WEAPON_RESPAWN_TIME	20
-#define AMMO_RESPAWN_TIME	20
+#define ITEM_RESPAWN_TIME	240
+#define WEAPON_RESPAWN_TIME	120
+#define AMMO_RESPAWN_TIME	180
 
 float g_flIntermissionStartTime = 0;
 
