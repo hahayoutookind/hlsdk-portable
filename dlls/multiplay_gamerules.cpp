@@ -281,6 +281,15 @@ void CHalfLifeMultiplay::Think( void )
 
 	last_frags = frags_remaining;
 	last_time = time_remaining;
+
+	//check if this is teamplay and the teams are correct
+	if( !g_teamplay )
+	{
+		g_teamplay = 1;
+		CVAR_SET_FLOAT( mp_teamplay, 1.0 );
+	}
+	if( CVAR_GET_STRING( mp_teamlist ) != "barney;zombie" )
+		CVAR_SET_STRING( mp_teamlist, "barney;zombie" );
 }
 
 //=========================================================
