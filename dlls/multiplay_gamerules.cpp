@@ -286,10 +286,10 @@ void CHalfLifeMultiplay::Think( void )
 	if( !g_teamplay )
 	{
 		g_teamplay = 1;
-		CVAR_SET_FLOAT( mp_teamplay, 1.0 );
+		CVAR_SET_FLOAT( "mp_teamplay", 1.0 );
 	}
-	if( CVAR_GET_STRING( mp_teamlist ) != "barney;zombie" )
-		CVAR_SET_STRING( mp_teamlist, "barney;zombie" );
+	if( CVAR_GET_STRING( "mp_teamlist" ) != "barney;zombie" )
+		CVAR_SET_STRING( "mp_teamlist", "barney;zombie" );
 }
 
 //=========================================================
