@@ -212,7 +212,7 @@ typedef struct
 	int iId;
 } AmmoInfo;
 
-#include "whandle.h"
+#include "coop/whandle.h"
 
 
 // Items that the player has in their inventory that they can use

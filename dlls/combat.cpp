@@ -38,9 +38,8 @@ extern Vector VecBModelOrigin( entvars_t *pevBModel );
 extern entvars_t *g_pevLastInflictor;
 
 #define GERMAN_GIB_COUNT		4
-// replaced by cvars
-//#define	HUMAN_GIB_COUNT			12
-//#define ALIEN_GIB_COUNT			8
+#define	HUMAN_GIB_COUNT			12
+#define ALIEN_GIB_COUNT			8
 
 // HACKHACK -- The gib velocity equations don't work
 void CGib::LimitVelocity( void )
@@ -177,13 +176,13 @@ void CGib::SpawnRandomGibs( entvars_t *pevVictim, int cGibs, int human )
 		{
 			// human pieces
 			pGib->Spawn( "models/hgibs.mdl" );
-			pGib->pev->body = RANDOM_LONG( 1, cvar_hgibcount.value - 1 );// start at one to avoid throwing random amounts of skulls (0th gib)
+			pGib->pev->body = RANDOM_LONG( 1, HUMAN_GIB_COUNT - 1 );// start at one to avoid throwing random amounts of skulls (0th gib)
 		}
 		else
 		{
 			// aliens
 			pGib->Spawn( "models/agibs.mdl" );
-			pGib->pev->body = RANDOM_LONG( 0, cvar_agibcount.value - 1 );
+			pGib->pev->body = RANDOM_LONG( 0, HUMAN_GIB_COUNT - 1 );
 		}
 
 		if( pevVictim )
@@ -825,7 +824,7 @@ void CGib::Spawn( const char *szGibModel )
 	UTIL_SetSize( pev, Vector( 0, 0, 0 ), Vector( 0, 0, 0 ) );
 
 	pev->nextthink = gpGlobals->time + 4.0f;
-	m_lifeTime = cvar_gibtime.value;
+	m_lifeTime = 25;
 
 	SetThink( &CGib::WaitTillLand );
 	SetTouch( &CGib::BounceGibTouch );

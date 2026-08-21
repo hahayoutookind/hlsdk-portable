@@ -84,8 +84,8 @@ enum sbar_data
 
 #define CHAT_INTERVAL 1.0f
 
-#include "gravgunmod.h"
-#include "whandle.h"
+#include "coop/gravgunmod.h"
+#include "coop/whandle.h"
  
 class CBasePlayer : public CBaseMonster
 {
@@ -332,8 +332,6 @@ public:
 	int m_iAutoWepSwitch;
 
 	Vector m_vecLastViewAngles;
-
-	virtual float TouchGravGun( CBaseEntity *attacker, int stage );
 
 	struct GGMData m_ggm;
 	virtual void Touch( CBaseEntity *pOther );

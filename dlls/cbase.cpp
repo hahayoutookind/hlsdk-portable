@@ -137,15 +137,9 @@ int GetEntityAPI2( DLL_FUNCTIONS *pFunctionTable, int *interfaceVersion )
 }
 #endif
 
-int Ent_CheckEntitySpawn( edict_t *pent );
-
 int DispatchSpawn( edict_t *pent )
 {
 	CBaseEntity *pEntity = (CBaseEntity *)GET_PRIVATE( pent );
-
-	int ret = Ent_CheckEntitySpawn( pent );
-	if( ret )
-		return ret;
 
 	if( pEntity )
 	{
@@ -666,8 +660,6 @@ TYPEDESCRIPTION	CBaseEntity::m_SaveData[] =
 	DEFINE_FIELD( CBaseEntity, m_pfnTouch, FIELD_FUNCTION ),
 	DEFINE_FIELD( CBaseEntity, m_pfnUse, FIELD_FUNCTION ),
 	DEFINE_FIELD( CBaseEntity, m_pfnBlocked, FIELD_FUNCTION ),
-	DEFINE_FIELD( CBaseEntity, enttools_data.enttools, FIELD_CHARACTER ),
-	DEFINE_ARRAY( CBaseEntity, enttools_data.ownerid, FIELD_CHARACTER, 33 ),
 };
 
 int CBaseEntity::Save( CSave &save )

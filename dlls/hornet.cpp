@@ -427,13 +427,6 @@ void CHornet::DieTouch( CBaseEntity *pOther )
 
 		if( !pev->owner )
 			pev->owner = edict();
-		if( mp_fixhornetbug.value )
-		{
-			pev->dmgtime = gpGlobals->time + 0.1;
-			// !finitef( pev->dmf )
-			if( ((*(int *)&( pev->dmg ) & 0x7f800000L) == 0x7f800000L) )
-				pev->dmg = 0;
-		}
 		pOther->TakeDamage( pev, VARS( pev->owner ), pev->dmg, DMG_BULLET );
 
 	}

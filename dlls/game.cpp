@@ -478,7 +478,6 @@ void GameDLLInit( void )
 
 	GGM_RegisterCVars();
 	COOP_RegisterCVars();
-	ENT_RegisterCVars();
 
 	CVAR_REGISTER( &build_commit );
 	CVAR_REGISTER( &build_branch );

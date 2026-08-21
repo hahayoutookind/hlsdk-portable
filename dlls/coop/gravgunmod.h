@@ -2,57 +2,15 @@
 #define GRAVGUNMOD_H
 
 
-extern cvar_t cvar_allow_gravgun;
-extern cvar_t cvar_allow_ar2;
-extern cvar_t cvar_ar2_mp5;
-extern cvar_t cvar_ar2_bullets;
-extern cvar_t cvar_ar2_balls;
-extern cvar_t cvar_allow_bigcock;
-extern cvar_t cvar_allow_gateofbabylon;
-extern cvar_t cvar_wresptime;
-extern cvar_t cvar_iresptime;
-extern cvar_t mp_gravgun_players;
 extern cvar_t mp_skipdefaults;
 extern cvar_t mp_unduck;
-
-extern cvar_t cvar_gibtime;
-extern cvar_t cvar_hgibcount;
-extern cvar_t cvar_agibcount;
-
 extern cvar_t mp_spectator;
-extern cvar_t mp_fixhornetbug;
+
 extern cvar_t mp_checkentities;
 extern cvar_t mp_touchmenu;
 extern cvar_t mp_fixsavetime;
 
-// distance clipping (client.cpp)
-// useful for open world
-extern cvar_t mp_serverdistclip;
-extern cvar_t mp_maxbmodeldist;
-extern cvar_t mp_maxtrashdist;
-extern cvar_t mp_maxwaterdist;
-extern cvar_t mp_maxmonsterdist;
-extern cvar_t mp_maxotherdist;
-extern cvar_t mp_enttools_checkmodels;
-
-// tempentity clipping
-// if enabled, ignores PVS, so use only on open world
-extern cvar_t mp_servercliptents;
-extern cvar_t mp_maxtentdist;
-
-// control decals count from server
-// decals is unuseful on sandbox servers
-// 100 instancs of single bmodel with 100 decals
-// will cause in 10000 decals in frame
-// r_decals limit does not cover it because it
-// only limit decal count on different models
-
-extern cvar_t mp_maxdecals;
-
 void GGM_RegisterCVars( void );
-#define GC_COMMON (1<<0)
-#define GC_ENTTOOLS (1<<1)
-void Ent_RunGC( int flags, const char *userid, const char *pattern = NULL );
 bool Q_stricmpext( const char *pattern, const char *text );
 class CBasePlayer;
 void GGM_ClientPutinServer(edict_t *pEntity , CBasePlayer *pPlayer);

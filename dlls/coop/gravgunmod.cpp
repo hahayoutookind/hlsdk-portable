@@ -8,42 +8,15 @@
 #include "weapons.h"
 
 
-cvar_t cvar_allow_gravgun = { "mp_allow_gravgun","2", FCVAR_SERVER };
-cvar_t cvar_allow_ar2 = { "mp_allow_ar2","0", FCVAR_SERVER };
-cvar_t cvar_ar2_mp5 = { "mp_ar2_mp5","0", FCVAR_SERVER };
-cvar_t cvar_ar2_balls = { "mp_ar2_balls","0", FCVAR_SERVER };
-cvar_t cvar_ar2_bullets = { "mp_ar2_bullets","0", FCVAR_SERVER };
-cvar_t cvar_allow_bigcock = { "mp_allow_bigcock","0", FCVAR_SERVER };
-cvar_t cvar_allow_gateofbabylon = { "mp_allow_gateofbabylon","0", FCVAR_SERVER };
-
-cvar_t cvar_wresptime = { "mp_wresptime","20", FCVAR_SERVER };
-cvar_t cvar_iresptime = { "mp_iresptime","30", FCVAR_SERVER };
-cvar_t cvar_gibtime = { "mp_gibtime","250", FCVAR_SERVER };
-cvar_t cvar_hgibcount = { "mp_hgibcount","12", FCVAR_SERVER };
-cvar_t cvar_agibcount = { "mp_agibcount","8", FCVAR_SERVER };
-cvar_t mp_gravgun_players = { "mp_gravgun_players", "0", FCVAR_SERVER };
 cvar_t mp_skipdefaults = { "mp_skipdefaults", "0", FCVAR_SERVER };
-cvar_t mp_spectator = { "mp_spectator", "0", FCVAR_SERVER };
 cvar_t mp_unduck = { "mp_unduck", "0", FCVAR_SERVER };
+cvar_t mp_spectator = { "mp_spectator", "0", FCVAR_SERVER };
 
-cvar_t mp_fixhornetbug = { "mp_fixhornetbug", "0", FCVAR_SERVER };
 cvar_t mp_fixsavetime = { "mp_fixsavetime", "0", FCVAR_SERVER };
 cvar_t mp_checkentities = { "mp_checkentities", "0", FCVAR_SERVER };
 cvar_t mp_touchmenu = { "mp_touchmenu", "1", FCVAR_SERVER };
 cvar_t mp_touchname = { "mp_touchname", "", FCVAR_SERVER };
 cvar_t mp_touchcommand = { "mp_touchcommand", "", FCVAR_SERVER };
-cvar_t mp_serverdistclip = { "mp_serverdistclip", "0", FCVAR_SERVER};
-cvar_t mp_maxbmodeldist = { "mp_maxbmodeldist", "4096", FCVAR_SERVER};
-cvar_t mp_maxtrashdist = { "mp_maxtrashdist", "4096", FCVAR_SERVER};
-cvar_t mp_maxwaterdist = { "mp_maxwaterdist", "4096", FCVAR_SERVER};
-cvar_t mp_maxotherdist = { "mp_maxotherdist", "4096", FCVAR_SERVER};
-cvar_t mp_maxmonsterdist = { "mp_maxmonsterdist", "4096", FCVAR_SERVER};
-cvar_t mp_servercliptents = { "mp_servercliptents", "0", FCVAR_SERVER};
-cvar_t mp_maxtentdist = { "mp_maxtentdist", "4096", FCVAR_SERVER};
-cvar_t mp_maxdecals = { "mp_maxdecals", "-1", FCVAR_SERVER };
-cvar_t mp_enttools_checkmodels = { "mp_enttools_checkmodels", "0", FCVAR_SERVER };
-cvar_t mp_errormdl = { "mp_errormdl", "0", FCVAR_SERVER };
-cvar_t mp_errormdlpath = { "mp_errormdlpath", "models/error.mdl", FCVAR_SERVER };
 
 cvar_t *zombietime = NULL;
 static char gamedir[MAX_PATH];
@@ -435,157 +408,6 @@ void GGM_LightStyle_f( void )
 	LIGHT_STYLE( style, CMD_ARGV(2) );
 }
 
-/*
-=====================
-Ent_RunGC
-
-Run Garbage Collector
-Clean trash that we can remove without breaking game
-Remove entities by uid or pattern
-=====================
-*/
-void Ent_RunGC( int flags, const char *userid, const char *pattern )
-{
-	int i, count = 0, removed = 0;
-	edict_t *ent = g_engfuncs.pfnPEntityOfEntIndex( gpGlobals->maxClients + 5 );
-
-	ALERT( at_warning, "Running garbage collector\n" );
-
-	for( i = gpGlobals->maxClients + 5; i < gpGlobals->maxEntities; i++, ent++ )
-	{
-		const char *classname = STRING( ent->v.classname );
-
-		if( ent->free )
-			continue;
-
-		if( !classname || !ent->v.classname || !classname[0] )
-			continue;
-
-		count++;
-
-		if( ent->v.flags & FL_KILLME )
-			continue;
-
-		if( !strcmp( classname, "spark_shower" ) )
-		{
-			ent->v.flags |= FL_KILLME;
-			removed++;
-			continue;
-		}
-
-		if( !strncmp( classname, "weapon_", 7 ) || !strncmp( classname, "ammo_", 5 ) || !strncmp( classname, "item_", 5 ) || !strcmp( classname, "prop" ) )
-		{
-			if( ent->v.velocity.z < -1600 )
-			{
-				ent->v.flags |= FL_KILLME;
-				removed++;
-				continue;
-			}
-		}
-
-		if( flags & GC_COMMON )
-		{
-			if( !strcmp( classname, "gib" ) || !strcmp( classname, "gateofbabylon_bolt" ) )
-			{
-				ent->v.flags |= FL_KILLME;
-				removed++;
-				continue;
-			}
-
-			if( ( !strncmp( classname, "monster_", 8 ) && ent->v.health <= 0 ) || ent->v.deadflag != DEAD_NO )
-			{
-				ent->v.flags |= FL_KILLME;
-				removed++;
-				continue;
-			}
-		}
-		if( !(flags & GC_ENTTOOLS) && !pattern )
-		{
-			if( strncmp( classname, "monster_", 8 ) || strncmp( classname, "weapon_", 7 ) || strncmp( classname, "ammo_", 5 ) || strncmp( classname, "item_", 5 ) )
-				continue;
-		}
-
-		if( !ent->v.owner && ent->v.spawnflags & SF_NORESPAWN )
-		{
-			ent->v.flags |= FL_KILLME;
-			removed++;
-			continue;
-		}
-
-		CBaseEntity *entity = CBaseEntity::Instance( ent );
-
-		if( !entity )
-		{
-			ent->v.flags |= FL_KILLME;
-			removed++;
-			continue;
-		}
-
-		if( (flags & GC_ENTTOOLS) && entity->enttools_data.enttools == 1 )
-		{
-			if( !userid || !strcmp( userid, entity->enttools_data.ownerid ) )
-			{
-				ent->v.flags |= FL_KILLME;
-				removed++;
-				continue;
-			}
-		}
-
-		if( (flags & GC_COMMON) && !entity->IsInWorld() )
-		{
-			ent->v.flags |= FL_KILLME;
-			removed++;
-			continue;
-		}
-
-		if( pattern )
-		{
-			const char *targetname = STRING( ent->v.targetname );
-			if( !targetname || !ent->v.targetname )
-				targetname = "";
-
-			if( Q_stricmpext( pattern, classname ) || Q_stricmpext( pattern, targetname ) )
-			{
-				ent->v.flags |= FL_KILLME;
-				removed++;
-				continue;
-			}
-		}
-	}
-
-	ALERT( at_notice, "Total %d entities, %d removed\n", count, removed );
-
-}
-
-/*
-=====================
-Ent_RunGC_f
-
-Run some GC modes manually
-=====================
-*/
-void Ent_RunGC_f()
-{
-	int enttools = atoi(CMD_ARGV(1));
-	const char *pattern = CMD_ARGV( 2 );
-	if( enttools != 2 || !pattern[0] )
-		pattern = NULL;
-	int flags = 0;
-	if( !enttools )
-		flags |= GC_COMMON;
-	if( enttools == 1 )
-		flags |= GC_ENTTOOLS;
-	Ent_RunGC( flags, NULL, pattern );
-}
-
-/*
-=====================
-CREATE_NAMED_ENTITY wrapper
-
-return NULL when out of edicts instead of Host_Error
-use timer to detect spawn in same frame
-=====================
-*/
 edict_t *CREATE_NAMED_ENTITY( string_t name )
 {
 	static int lastindex;
@@ -599,115 +421,6 @@ edict_t *CREATE_NAMED_ENTITY( string_t name )
 	lastindex = ENTINDEX( pent );
 	time = gpGlobals->time;
 	return pent;
-}
-
-/*
-=====================
-Ent_ChangeOwner
-
-Change owner and enttools state by pattern or old owner id
-=====================
-*/
-void Ent_ChangeOwner( const char *szOld, const char *pattern, const char *szNew, int oldstate, int newstate )
-{
-	edict_t *ent = g_engfuncs.pfnPEntityOfEntIndex( gpGlobals->maxClients + 5 );
-	int i;
-
-	for( i = gpGlobals->maxClients + 5; i < gpGlobals->maxEntities; i++, ent++ )
-	{
-		CBaseEntity *pEntity = CBaseEntity::Instance( ent );
-
-		if( !pEntity )
-			continue;
-
-		if( pEntity->enttools_data.enttools == oldstate )
-		{
-			const char *classname = STRING( ent->v.classname );
-			const char *targetname = STRING( ent->v.targetname );
-
-			if( !ent->v.classname ) classname = 0;
-			if( !ent->v.targetname ) targetname = 0;
-
-			if( pattern && pattern[0] && classname && targetname && !Q_stricmpext( pattern, classname ) && !Q_stricmpext( pattern, targetname ) )
-				continue;
-
-			if( szOld && szOld[0] && strcmp( szOld, pEntity->enttools_data.ownerid ) )
-				continue;
-
-			pEntity->enttools_data.enttools = newstate;
-			strcpy( pEntity->enttools_data.ownerid, szNew );
-		}
-	}
-}
-
-/*
-=====================
-Ent_ChangeOwner_f
-=====================
-*/
-void Ent_Chown_f()
-{
-	if( CMD_ARGC() != 6 )
-	{
-		ALERT( at_console, "ent_chown <oldowner> <pattern> <newowner> <oldstate> <newstate>\n");
-	}
-	Ent_ChangeOwner( CMD_ARGV(1), CMD_ARGV(2), CMD_ARGV(3), atoi(CMD_ARGV(4)), atoi(CMD_ARGV(5)) );
-}
-
-
-/*
-=====================
-Ent_CheckEntitySpawn
-
-Refuse some entities to spawn
-=====================
-*/
-int Ent_CheckEntitySpawn( edict_t *pent )
-{
-
-	if( mp_checkentities.value )
-	{
-		int index = ENTINDEX( pent );
-		static unsigned int counter, lastgc;
-		counter++;
-
-
-		if( gpGlobals->maxEntities - index < 10 )
-		{
-			ALERT( at_error, "REFUSING CREATING ENTITY %s\n", STRING( pent->v.classname ) );
-			Ent_RunGC( GC_COMMON, NULL );
-			return 1;
-		}
-
-		if( gpGlobals->maxEntities - index < 100 )
-		{
-			if( !strncmp( STRING(pent->v.classname), "env_", 4) )
-				return 1;
-
-			if( !strcmp( STRING(pent->v.classname), "gib" ) )
-				return 1;
-
-
-			Ent_RunGC( GC_COMMON, NULL );
-
-			return 0;
-		}
-
-		if( index > gpGlobals->maxEntities / 2 && counter - lastgc > 256 )
-		{
-			lastgc = counter;
-			Ent_RunGC( GC_COMMON, NULL );
-			return 0;
-		}
-		else if( counter - lastgc > gpGlobals->maxEntities )
-		{
-			lastgc = counter;
-			Ent_RunGC( GC_COMMON, NULL );
-			return 0;
-		}
-	}
-
-	return 0;
 }
 
 /*
@@ -824,13 +537,6 @@ Handle first spawn in deathmatch
 */
 void GGM_ClientFirstSpawn(CBasePlayer *pPlayer)
 {
-	// AGHL-like spectator
-	if( mp_spectator.value && g_pGameRules->IsMultiplayer()  )
-	{
-		pPlayer->RemoveAllItems( TRUE );
-		UTIL_BecomeSpectator( pPlayer );
-	}
-
 }
 
 /*
@@ -1143,10 +849,26 @@ void GGM_ConnectSaveBot( void )
 	edict_t *client0 = INDEXENT( 1 );
 	edict_t *bot = NULL;
 	char cmd[33];
-	float health = client0->v.health;
-	int deadflag = client0->v.deadflag;
-	float zombietime_old = 0;
+	float health = 0;
+	int deadflag = 0;
+	const char *infobuffer;
+
 	SERVER_EXECUTE();
+
+	if( !client0 )
+	{
+		bot = g_engfuncs.pfnCreateFakeClient( "_save_bot" );
+		if( !bot )
+			return;
+		bot->v.health = 1;
+		bot->v.deadflag = 0;
+		bot->v.effects |= EF_NODRAW;
+		bot->free = true;
+		return;
+	}
+
+	health = client0->v.health;
+	deadflag = client0->v.deadflag;
 
 	// save even with dead player
 	if( health <= 0 )
@@ -1154,13 +876,28 @@ void GGM_ConnectSaveBot( void )
 
 	client0->v.deadflag = 0;
 
-	if( g_engfuncs.pfnGetInfoKeyBuffer( client0 )[0] )
+	infobuffer = g_engfuncs.pfnGetInfoKeyBuffer( client0 );
+	if( infobuffer && infobuffer[0] )
+	{
+		client0->v.deadflag = deadflag;
+		client0->v.health = health;
 		return;
+	}
 
 	safe_snprintf( cmd, sizeof( cmd ), "kick #%d\n", GETPLAYERUSERID( client0 ) );
 	SERVER_COMMAND(cmd);
 	SERVER_EXECUTE();
 	bot = g_engfuncs.pfnCreateFakeClient("_save_bot");
+	if( !bot )
+	{
+		client0 = INDEXENT( 1 );
+		if( client0 )
+		{
+			client0->v.deadflag = deadflag;
+			client0->v.health = health;
+		}
+		return;
+	}
 	if( bot != client0 )
 		ALERT( at_warning, "Bot is not player 1\n" );
 	bot->v.health = 1;
@@ -1168,10 +905,12 @@ void GGM_ConnectSaveBot( void )
 	bot->v.effects |= EF_NODRAW;
 	bot->free = true;
 
-	client0->v.deadflag = deadflag;
-	client0->v.health = health;
-	if( zombietime )
-		zombietime->value = zombietime_old;
+	client0 = INDEXENT( 1 );
+	if( client0 )
+	{
+		client0->v.deadflag = deadflag;
+		client0->v.health = health;
+	}
 }
 
 /*
@@ -1188,43 +927,79 @@ void GGM_Save( const char *savename )
 	edict_t *client0 = INDEXENT( 1 );
 	edict_t *bot = NULL;
 	char cmd[33];
-	float health = client0->v.health;
-	int deadflag = client0->v.deadflag;
-	float zombietime_old;
+	float health = 0;
+	int deadflag = 0;
+	float zombietime_old = 0;
 	bool fNeedKick = false;
+	const char *infobuffer;
+	const char *physinfo;
 	SERVER_EXECUTE();
 
-	// save even with dead player
-	if( health <= 0 )
-		client0->v.health = 1;
-
-	client0->v.deadflag = 0;
-
-	if( zombietime )
-		zombietime_old = zombietime->value;
-	if( !(g_engfuncs.pfnGetInfoKeyBuffer( client0 )[0]))
-		fNeedKick = true;
-	if( !(g_engfuncs.pfnGetPhysicsInfoString( client0 )[0]))
-		fNeedKick = true;
-	if( !client0->v.netname )
-		fNeedKick = true;
-	if( !strcmp( GETPLAYERAUTHID( client0 ), "VALVE_ID_LOOPBACK" ) )
-		fNeedKick = false;
-
-	if( mp_coop.value )
-		fNeedKick = false;
-
-	// hack to make save work when client 0 not connected
-	if( fNeedKick )
+	if( !client0 )
 	{
-		safe_snprintf( cmd, sizeof( cmd ), "kick #%d\n", GETPLAYERUSERID( client0 ) );
-		SERVER_COMMAND(cmd);
-		SERVER_EXECUTE();
-		bot = g_engfuncs.pfnCreateFakeClient("_save_bot");
-		if( bot != client0 )
-			ALERT( at_warning, "Bot is not player 1\n" );
-		bot->v.health = 1;
-		bot->v.deadflag = 0;
+		bot = g_engfuncs.pfnCreateFakeClient( "_save_bot" );
+		client0 = bot ? bot : INDEXENT( 1 );
+		if( !client0 )
+		{
+			ALERT( at_error, "GGM_Save: no player 1, cannot save\n" );
+			return;
+		}
+		client0->v.health = 1;
+		client0->v.deadflag = 0;
+	}
+	else
+	{
+		health = client0->v.health;
+		deadflag = client0->v.deadflag;
+
+		// save even with dead player
+		if( health <= 0 )
+			client0->v.health = 1;
+
+		client0->v.deadflag = 0;
+
+		if( zombietime )
+			zombietime_old = zombietime->value;
+
+		infobuffer = g_engfuncs.pfnGetInfoKeyBuffer( client0 );
+		physinfo = g_engfuncs.pfnGetPhysicsInfoString( client0 );
+		if( !infobuffer || !infobuffer[0] )
+			fNeedKick = true;
+		if( !physinfo || !physinfo[0] )
+			fNeedKick = true;
+		if( !client0->v.netname )
+			fNeedKick = true;
+		if( !strcmp( GETPLAYERAUTHID( client0 ), "VALVE_ID_LOOPBACK" ) )
+			fNeedKick = false;
+
+		if( mp_coop.value )
+			fNeedKick = false;
+
+		// hack to make save work when client 0 not connected
+		if( fNeedKick )
+		{
+			safe_snprintf( cmd, sizeof( cmd ), "kick #%d\n", GETPLAYERUSERID( client0 ) );
+			SERVER_COMMAND(cmd);
+			SERVER_EXECUTE();
+			bot = g_engfuncs.pfnCreateFakeClient("_save_bot");
+			if( !bot )
+			{
+				ALERT( at_error, "GGM_Save: CreateFakeClient failed\n" );
+				client0 = INDEXENT( 1 );
+				if( client0 )
+				{
+					client0->v.deadflag = deadflag;
+					client0->v.health = health;
+				}
+				if( zombietime )
+					zombietime->value = zombietime_old;
+				return;
+			}
+			if( bot != client0 )
+				ALERT( at_warning, "Bot is not player 1\n" );
+			bot->v.health = 1;
+			bot->v.deadflag = 0;
+		}
 	}
 
 	safe_snprintf( cmd, sizeof( cmd ), "save %s\n", savename);
@@ -1232,8 +1007,12 @@ void GGM_Save( const char *savename )
 	if( bot )
 		SERVER_COMMAND( "kick _save_bot\n");
 	SERVER_EXECUTE();
-	client0->v.deadflag = deadflag;
-	client0->v.health = health;
+	client0 = INDEXENT( 1 );
+	if( client0 )
+	{
+		client0->v.deadflag = deadflag;
+		client0->v.health = health;
+	}
 	if( zombietime )
 		zombietime->value = zombietime_old;
 	safe_snprintf( cmd, sizeof( cmd ), "%s/save/%s.players", gamedir, savename );
@@ -2781,8 +2560,6 @@ void GGM_InitialMenus( CBasePlayer *pPlayer )
 
 	GGM_HelpCommand( pPlayer, "init" );
 
-	if( mp_maxdecals.value >= 0 )
-		CLIENT_COMMAND( pPlayer->edict(), UTIL_VarArgs("r_decals %f\n", mp_maxdecals.value ) );
 }
 
 /*
@@ -2838,10 +2615,6 @@ bool GGM_TouchCommand( CBasePlayer *pPlayer, const char *pcmd )
 	return true;
 }
 
-
-void DumpProps(); // prop.cpp
-
-
 /*
 =====================
 GGM_ClientCommand
@@ -2867,11 +2640,6 @@ bool GGM_ClientCommand( CBasePlayer *pPlayer, const char *pCmd )
 		return true;
 	else if( GGM_VoteProcess( pPlayer, pCmd ) )
 		return true;
-	else if( FStrEq(pCmd, "dumpprops") )
-	{
-		DumpProps();
-		return true;
-	}
 	else if( FStrEq(pCmd, "reg") )
 	{
 		GGM_Register_f(pPlayer);
@@ -2917,14 +2685,6 @@ bool GGM_ClientCommand( CBasePlayer *pPlayer, const char *pCmd )
 		GGM_RestoreState( pPlayer );
 		return true;
 	}
-	else if( FStrEq(pCmd, "ent_import" ) )
-	{
-		if( !pPlayer->m_ggm.pState || !pPlayer->m_ggm.pState->fRegistered )
-			return false;
-
-		Ent_ChangeOwner( GGM_GetAuthID(pPlayer), NULL, pPlayer->m_ggm.pState->szUID, 1, 2 );
-		return true;
-	}
 	else if( FStrEq(pCmd, "logout") )
 	{
 		GGM_Logout(pPlayer);
@@ -2939,8 +2699,6 @@ bool GGM_ClientCommand( CBasePlayer *pPlayer, const char *pCmd )
 		return true;
 	}
 	else if( COOP_ClientCommand( pPlayer->edict() ) )
-		return true;
-	else if( Ent_ProcessClientCommand( pPlayer->edict() ) )
 		return true;
 
 	return ret;
@@ -2978,77 +2736,14 @@ void GGM_CvarValue2( const edict_t *pEnt, int requestID, const char *cvarName, c
 	}
 
 }
-#include "com_model.h"
-//==================
-// error.mdl stuff
-//==================
-/*
-=====================
-SET_MODEL wrapper
-
-set fallback model if SetModel failed
-=====================
-*/
-
 void SET_MODEL( edict_t *e, const char *model )
 {
 	g_engfuncs.pfnSetModel( e, model );
-
-	if( !mp_errormdl.value )
-		return;
-
-	if( model && model[0] && e )
-	{
-		if( e->v.modelindex )
-		{
-			model_t *mod = (model_t*)g_physfuncs.pfnGetModel(e->v.modelindex);
-			if( mod )
-			{
-				ALERT( at_console, "SET_MODEL %s %d %x %d %x\n", model, e->v.modelindex, mod->nodes, mod->type, mod->cache.data );
-				if( mod->type == mod_brush &&  !mod->nodes )
-					g_engfuncs.pfnSetModel( e, mp_errormdlpath.string );
-			}
-			else
-			{
-				int index = g_engfuncs.pfnPrecacheModel(model);
-				model_t *mod = (model_t*)g_physfuncs.pfnGetModel(index);
-				if( !mod || ( mod->type == mod_brush && !mod->nodes ) )
-					g_engfuncs.pfnSetModel( e, mp_errormdlpath.string );
-
-				ALERT( at_console, "SET_MODEL %s %d\n", model, e->v.modelindex );
-			}
-
-		}
-	}
 }
 
-/*
-=====================
-PRECACHE_MODEL wrapper
-
-set fallback model if PrecacheModel failed
-=====================
-*/
-int PRECACHE_MODEL(const char *model)
+int PRECACHE_MODEL( const char *model )
 {
-	int index = g_engfuncs.pfnPrecacheModel( model );
-
-	if( !index || !mp_errormdl.value )
-		return index;
-
-	model_t *mod = (model_t*)g_physfuncs.pfnGetModel( index );
-	if( !mod )
-	{
-		ALERT( at_console, "PRECACHE_MODEL %s %d\n", model, index );
-		return g_engfuncs.pfnPrecacheModel( mp_errormdlpath.string );
-	}
-	else
-	{
-		if( mod->type == mod_brush &&  !mod->nodes )
-			return g_engfuncs.pfnPrecacheModel( mp_errormdlpath.string );
-	}
-
-	return index;
+	return g_engfuncs.pfnPrecacheModel( model );
 }
 
 void GGM_Pause_f( void )
@@ -3095,44 +2790,16 @@ Call on server load
 */
 void GGM_RegisterCVars( void )
 {
-	CVAR_REGISTER( &cvar_allow_ar2 );
-	CVAR_REGISTER( &cvar_allow_gravgun );
-	CVAR_REGISTER( &cvar_ar2_mp5 );
-	CVAR_REGISTER( &cvar_ar2_bullets );
-	CVAR_REGISTER( &cvar_ar2_balls );
-	CVAR_REGISTER( &cvar_allow_bigcock );
-	CVAR_REGISTER( &cvar_allow_gateofbabylon );
-	CVAR_REGISTER( &cvar_wresptime );
-	CVAR_REGISTER( &cvar_iresptime );
-	CVAR_REGISTER( &cvar_gibtime );
-	CVAR_REGISTER( &cvar_hgibcount );
-	CVAR_REGISTER( &cvar_agibcount );
-	CVAR_REGISTER( &mp_gravgun_players );
-	CVAR_REGISTER( &mp_fixhornetbug );
 	CVAR_REGISTER( &mp_fixsavetime );
+	CVAR_REGISTER( &mp_spectator );
 	CVAR_REGISTER( &mp_checkentities );
 	CVAR_REGISTER( &mp_touchmenu );
 	CVAR_REGISTER( &mp_touchname );
 	CVAR_REGISTER( &mp_touchcommand );
-	CVAR_REGISTER( &mp_serverdistclip );
-	CVAR_REGISTER( &mp_maxbmodeldist );
-	CVAR_REGISTER( &mp_maxtrashdist );
-	CVAR_REGISTER( &mp_maxwaterdist );
-	CVAR_REGISTER( &mp_maxmonsterdist );
-	CVAR_REGISTER( &mp_maxotherdist );
-	CVAR_REGISTER( &mp_servercliptents );
-	CVAR_REGISTER( &mp_maxtentdist );
-	CVAR_REGISTER( &mp_maxdecals );
-	CVAR_REGISTER( &mp_enttools_checkmodels );
-	CVAR_REGISTER( &mp_errormdl );
-	CVAR_REGISTER( &mp_errormdlpath );
 	CVAR_REGISTER( &mp_unduck );
 	CVAR_REGISTER( &mp_skipdefaults );
-	CVAR_REGISTER( &mp_spectator );
 
-	g_engfuncs.pfnAddServerCommand( "ent_rungc", Ent_RunGC_f );
 	g_engfuncs.pfnAddServerCommand( "mp_lightstyle", GGM_LightStyle_f );
-	g_engfuncs.pfnAddServerCommand( "ent_chown", Ent_Chown_f );
 	g_engfuncs.pfnAddServerCommand( "saveplayers", GGM_SavePlayers_f );
 	g_engfuncs.pfnAddServerCommand( "loadplayers", GGM_LoadPlayers_f );
 	g_engfuncs.pfnAddServerCommand( "ggm_save", GGM_Save_f );

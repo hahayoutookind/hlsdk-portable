@@ -34,7 +34,7 @@
 #include "gamerules.h"
 #include "teamplay_gamerules.h"
 #include "physcallback.h"
-#include "coop_util.h"
+#include "coop/coop_util.h"
 
 extern CGraph WorldGraph;
 extern CSoundEnt *pSoundEnt;

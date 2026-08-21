@@ -46,9 +46,8 @@ extern cvar_t bhopcap;
 extern cvar_t sv_pushable_fixed_tick_fudge;
 extern cvar_t sv_busters;
 
-#include "coop_util.h"
-#include "enttools.h"
-#include "gravgunmod.h"
+#include "coop/coop_util.h"
+#include "coop/gravgunmod.h"
 
 // Engine Cvars
 extern cvar_t *g_psv_gravity;

@@ -1099,56 +1099,18 @@ void UTIL_BloodStream( const Vector &origin, const Vector &direction, int color,
 {
 	if( !UTIL_ShouldShowBlood( color ) )
 		return;
-
-	if( mp_serverdistclip.value && mp_servercliptents.value )
-	{
-		// loop through all players
-		for( int i = 1; i <= gpGlobals->maxClients; i++ )
-		{
-			CBaseEntity *pPlayer = UTIL_PlayerByIndex( i );
-			if( pPlayer )
-			{
-				Vector delta = origin - pPlayer->edict()->v.origin;
-				float dist = 0;
-
-				if( fabs(delta.x) > dist )
-					dist = fabs(delta.x);
-				if( fabs(delta.y) > dist )
-					dist = fabs(delta.y);
-				if( fabs(delta.z) > dist )
-					dist = fabs(delta.z);
-				if( dist > mp_maxtentdist.value)
-					continue;
-
-				MESSAGE_BEGIN( MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, NULL, pPlayer->edict() );
-					WRITE_BYTE( TE_BLOODSTREAM );
-					WRITE_COORD( origin.x );
-					WRITE_COORD( origin.y );
-					WRITE_COORD( origin.z );
-					WRITE_COORD( direction.x );
-					WRITE_COORD( direction.y );
-					WRITE_COORD( direction.z );
-					WRITE_BYTE( color );
-					WRITE_BYTE( Q_min( amount, 255 ) );
-				MESSAGE_END();
-			}
-		}
-	}
-	else
-	{
-		MESSAGE_BEGIN( MSG_PVS, SVC_TEMPENTITY, origin );
-			WRITE_BYTE( TE_BLOODSTREAM );
-			WRITE_COORD( origin.x );
-			WRITE_COORD( origin.y );
-			WRITE_COORD( origin.z );
-			WRITE_COORD( direction.x );
-			WRITE_COORD( direction.y );
-			WRITE_COORD( direction.z );
-			WRITE_BYTE( color );
-			WRITE_BYTE( Q_min( amount, 255 ) );
-		MESSAGE_END();
-	}
-}				
+	MESSAGE_BEGIN( MSG_PVS, SVC_TEMPENTITY, origin );
+		WRITE_BYTE( TE_BLOODSTREAM );
+		WRITE_COORD( origin.x );
+		WRITE_COORD( origin.y );
+		WRITE_COORD( origin.z );
+		WRITE_COORD( direction.x );
+		WRITE_COORD( direction.y );
+		WRITE_COORD( direction.z );
+		WRITE_BYTE( color );
+		WRITE_BYTE( Q_min( amount, 255 ) );
+	MESSAGE_END();
+}
 
 void UTIL_BloodDrips( const Vector &origin, const Vector &direction, int color, int amount )
 {
@@ -1167,53 +1129,17 @@ void UTIL_BloodDrips( const Vector &origin, const Vector &direction, int color, 
 	if( amount > 255 )
 		amount = 255;
 
-	if( mp_serverdistclip.value && mp_servercliptents.value )
-	{
-		// loop through all players
-		for( int i = 1; i <= gpGlobals->maxClients; i++ )
-		{
-			CBaseEntity *pPlayer = UTIL_PlayerByIndex( i );
-			if( pPlayer )
-			{
-				Vector delta = origin - pPlayer->edict()->v.origin;
-				float dist = 0;
-
-				if( fabs(delta.x) > dist )
-					dist = fabs(delta.x);
-				if( fabs(delta.y) > dist )
-					dist = fabs(delta.y);
-				if( fabs(delta.z) > dist )
-					dist = fabs(delta.z);
-				if( dist > mp_maxtentdist.value)
-					continue;
-
-				MESSAGE_BEGIN( MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, NULL, pPlayer->edict() );
-					WRITE_BYTE( TE_BLOODSPRITE );
-					WRITE_COORD( origin.x);								// pos
-					WRITE_COORD( origin.y);
-					WRITE_COORD( origin.z);
-					WRITE_SHORT( g_sModelIndexBloodSpray );				// initial sprite model
-					WRITE_SHORT( g_sModelIndexBloodDrop );				// droplet sprite models
-					WRITE_BYTE( color );								// color index into host_basepal
-					WRITE_BYTE( Q_min( Q_max( 3, amount / 10 ), 16 ) );		// size
-				MESSAGE_END();
-			}
-		}
-	}
-	else
-	{
-		MESSAGE_BEGIN( MSG_PVS, SVC_TEMPENTITY, origin );
-			WRITE_BYTE( TE_BLOODSPRITE );
-			WRITE_COORD( origin.x);								// pos
-			WRITE_COORD( origin.y);
-			WRITE_COORD( origin.z);
-			WRITE_SHORT( g_sModelIndexBloodSpray );				// initial sprite model
-			WRITE_SHORT( g_sModelIndexBloodDrop );				// droplet sprite models
-			WRITE_BYTE( color );								// color index into host_basepal
-			WRITE_BYTE( Q_min( Q_max( 3, amount / 10 ), 16 ) );		// size
-		MESSAGE_END();
-	}
-}				
+	MESSAGE_BEGIN( MSG_PVS, SVC_TEMPENTITY, origin );
+		WRITE_BYTE( TE_BLOODSPRITE );
+		WRITE_COORD( origin.x);								// pos
+		WRITE_COORD( origin.y);
+		WRITE_COORD( origin.z);
+		WRITE_SHORT( g_sModelIndexBloodSpray );				// initial sprite model
+		WRITE_SHORT( g_sModelIndexBloodDrop );				// droplet sprite models
+		WRITE_BYTE( color );								// color index into host_basepal
+		WRITE_BYTE( Q_min( Q_max( 3, amount / 10 ), 16 ) );		// size
+	MESSAGE_END();
+}
 
 Vector UTIL_RandomBloodVector( void )
 {
@@ -1244,9 +1170,6 @@ void UTIL_DecalTrace( TraceResult *pTrace, int decalNumber )
 	int message;
 
 	if( decalNumber < 0 )
-		return;
-
-	if( !mp_maxdecals.value ) // even do not send if decals disabled
 		return;
 
 	index = gDecals[decalNumber].index;
@@ -1287,50 +1210,15 @@ void UTIL_DecalTrace( TraceResult *pTrace, int decalNumber )
 		}
 	}
 
-	if( mp_serverdistclip.value && mp_servercliptents.value )
-	{
-		// loop through all players
-		for( int i = 1; i <= gpGlobals->maxClients; i++ )
-		{
-			CBaseEntity *pPlayer = UTIL_PlayerByIndex( i );
-			if( pPlayer )
-			{
-				Vector delta = pTrace->vecEndPos - pPlayer->edict()->v.origin;
-				float dist = 0;
-
-				if( fabs(delta.x) > dist )
-					dist = fabs(delta.x);
-				if( fabs(delta.y) > dist )
-					dist = fabs(delta.y);
-				if( fabs(delta.z) > dist )
-					dist = fabs(delta.z);
-				if( dist > mp_maxtentdist.value)
-					continue;
-
-				MESSAGE_BEGIN( MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, NULL, pPlayer->edict() );
-					WRITE_BYTE( message );
-					WRITE_COORD( pTrace->vecEndPos.x );
-					WRITE_COORD( pTrace->vecEndPos.y );
-					WRITE_COORD( pTrace->vecEndPos.z );
-					WRITE_BYTE( index );
-					if( entityIndex )
-						WRITE_SHORT( entityIndex );
-				MESSAGE_END();
-			}
-		}
-	}
-	else
-	{
-		MESSAGE_BEGIN( MSG_BROADCAST, SVC_TEMPENTITY );
-			WRITE_BYTE( message );
-			WRITE_COORD( pTrace->vecEndPos.x );
-			WRITE_COORD( pTrace->vecEndPos.y );
-			WRITE_COORD( pTrace->vecEndPos.z );
-			WRITE_BYTE( index );
-			if( entityIndex )
-				WRITE_SHORT( entityIndex );
-		MESSAGE_END();
-	}
+	MESSAGE_BEGIN( MSG_BROADCAST, SVC_TEMPENTITY );
+		WRITE_BYTE( message );
+		WRITE_COORD( pTrace->vecEndPos.x );
+		WRITE_COORD( pTrace->vecEndPos.y );
+		WRITE_COORD( pTrace->vecEndPos.z );
+		WRITE_BYTE( index );
+		if( entityIndex )
+			WRITE_SHORT( entityIndex );
+	MESSAGE_END();
 }
 
 /*
@@ -1361,59 +1249,19 @@ void UTIL_PlayerDecalTrace( TraceResult *pTrace, int playernum, int decalNumber,
 	if( pTrace->flFraction == 1.0f )
 		return;
 
-	if( !mp_maxdecals.value ) // even do not send if decals disabled
-		return;
-
-	if( mp_serverdistclip.value && mp_servercliptents.value )
-	{
-		// loop through all players
-		for( int i = 1; i <= gpGlobals->maxClients; i++ )
-		{
-			CBaseEntity *pPlayer = UTIL_PlayerByIndex( i );
-			if( pPlayer )
-			{
-				Vector delta = pTrace->vecEndPos - pPlayer->edict()->v.origin;
-				float dist = 0;
-
-				if( fabs(delta.x) > dist )
-					dist = fabs(delta.x);
-				if( fabs(delta.y) > dist )
-					dist = fabs(delta.y);
-				if( fabs(delta.z) > dist )
-					dist = fabs(delta.z);
-				if( dist > mp_maxtentdist.value)
-					continue;
-
-				MESSAGE_BEGIN( MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, NULL, pPlayer->edict() );
-					WRITE_BYTE( TE_PLAYERDECAL );
-					WRITE_BYTE( playernum );
-					WRITE_COORD( pTrace->vecEndPos.x );
-					WRITE_COORD( pTrace->vecEndPos.y );
-					WRITE_COORD( pTrace->vecEndPos.z );
-					WRITE_SHORT( (short)ENTINDEX( pTrace->pHit ) );
-					WRITE_BYTE( index );
-				MESSAGE_END();
-			}
-		}
-	}
-	else
-	{
-		MESSAGE_BEGIN( MSG_BROADCAST, SVC_TEMPENTITY );
-			WRITE_BYTE( TE_PLAYERDECAL );
-			WRITE_BYTE( playernum );
-			WRITE_COORD( pTrace->vecEndPos.x );
-			WRITE_COORD( pTrace->vecEndPos.y );
-			WRITE_COORD( pTrace->vecEndPos.z );
-			WRITE_SHORT( (short)ENTINDEX( pTrace->pHit ) );
-			WRITE_BYTE( index );
-		MESSAGE_END();
-	}
+	MESSAGE_BEGIN( MSG_BROADCAST, SVC_TEMPENTITY );
+		WRITE_BYTE( TE_PLAYERDECAL );
+		WRITE_BYTE( playernum );
+		WRITE_COORD( pTrace->vecEndPos.x );
+		WRITE_COORD( pTrace->vecEndPos.y );
+		WRITE_COORD( pTrace->vecEndPos.z );
+		WRITE_SHORT( (short)ENTINDEX( pTrace->pHit ) );
+		WRITE_BYTE( index );
+	MESSAGE_END();
 }
 
 void UTIL_GunshotDecalTrace( TraceResult *pTrace, int decalNumber )
 {
-	if( !mp_maxdecals.value ) // even do not send if decals disabled
-		return;
 
 	if( decalNumber < 0 )
 		return;
@@ -1425,135 +1273,35 @@ void UTIL_GunshotDecalTrace( TraceResult *pTrace, int decalNumber )
 	if( pTrace->flFraction == 1.0f )
 		return;
 
-	if( mp_serverdistclip.value && mp_servercliptents.value )
-	{
-		// loop through all players
-		for( int i = 1; i <= gpGlobals->maxClients; i++ )
-		{
-			CBaseEntity *pPlayer = UTIL_PlayerByIndex( i );
-			if( pPlayer )
-			{
-				Vector delta = pTrace->vecEndPos - pPlayer->edict()->v.origin;
-				float dist = 0;
-
-				if( fabs(delta.x) > dist )
-					dist = fabs(delta.x);
-				if( fabs(delta.y) > dist )
-					dist = fabs(delta.y);
-				if( fabs(delta.z) > dist )
-					dist = fabs(delta.z);
-				if( dist > mp_maxtentdist.value)
-					continue;
-
-				MESSAGE_BEGIN( MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, NULL, pPlayer->edict());
-					WRITE_BYTE( TE_GUNSHOTDECAL );
-					WRITE_COORD( pTrace->vecEndPos.x );
-					WRITE_COORD( pTrace->vecEndPos.y );
-					WRITE_COORD( pTrace->vecEndPos.z );
-					WRITE_SHORT( (short)ENTINDEX( pTrace->pHit ) );
-					WRITE_BYTE( index );
-				MESSAGE_END();
-			}
-		}
-	}
-	else
-	{
-		MESSAGE_BEGIN( MSG_PAS, SVC_TEMPENTITY, pTrace->vecEndPos );
-			WRITE_BYTE( TE_GUNSHOTDECAL );
-			WRITE_COORD( pTrace->vecEndPos.x );
-			WRITE_COORD( pTrace->vecEndPos.y );
-			WRITE_COORD( pTrace->vecEndPos.z );
-			WRITE_SHORT( (short)ENTINDEX( pTrace->pHit ) );
-			WRITE_BYTE( index );
-		MESSAGE_END();
-	}
+	MESSAGE_BEGIN( MSG_PAS, SVC_TEMPENTITY, pTrace->vecEndPos );
+		WRITE_BYTE( TE_GUNSHOTDECAL );
+		WRITE_COORD( pTrace->vecEndPos.x );
+		WRITE_COORD( pTrace->vecEndPos.y );
+		WRITE_COORD( pTrace->vecEndPos.z );
+		WRITE_SHORT( (short)ENTINDEX( pTrace->pHit ) );
+		WRITE_BYTE( index );
+	MESSAGE_END();
 }
 
 void UTIL_Sparks( const Vector &position )
 {
-
-	if( mp_serverdistclip.value && mp_servercliptents.value )
-	{
-		// loop through all players
-		for( int i = 1; i <= gpGlobals->maxClients; i++ )
-		{
-			CBaseEntity *pPlayer = UTIL_PlayerByIndex( i );
-			if( pPlayer )
-			{
-				Vector delta = position - pPlayer->edict()->v.origin;
-				float dist = 0;
-
-				if( fabs(delta.x) > dist )
-					dist = fabs(delta.x);
-				if( fabs(delta.y) > dist )
-					dist = fabs(delta.y);
-				if( fabs(delta.z) > dist )
-					dist = fabs(delta.z);
-				if( dist > mp_maxtentdist.value)
-					continue;
-
-				MESSAGE_BEGIN( MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, NULL, pPlayer->edict() );
-					WRITE_BYTE( TE_SPARKS );
-					WRITE_COORD( position.x );
-					WRITE_COORD( position.y );
-					WRITE_COORD( position.z );
-				MESSAGE_END();
-			}
-		}
-	}
-	else
-	{
-		MESSAGE_BEGIN( MSG_PVS, SVC_TEMPENTITY, position );
-			WRITE_BYTE( TE_SPARKS );
-			WRITE_COORD( position.x );
-			WRITE_COORD( position.y );
-			WRITE_COORD( position.z );
-		MESSAGE_END();
-	}
+	MESSAGE_BEGIN( MSG_PVS, SVC_TEMPENTITY, position );
+		WRITE_BYTE( TE_SPARKS );
+		WRITE_COORD( position.x );
+		WRITE_COORD( position.y );
+		WRITE_COORD( position.z );
+	MESSAGE_END();
 }
 
 void UTIL_Ricochet( const Vector &position, float scale )
 {
-	if( mp_serverdistclip.value && mp_servercliptents.value )
-	{
-		// loop through all players
-		for( int i = 1; i <= gpGlobals->maxClients; i++ )
-		{
-			CBaseEntity *pPlayer = UTIL_PlayerByIndex( i );
-			if( pPlayer )
-			{
-				Vector delta = position - pPlayer->edict()->v.origin;
-				float dist = 0;
-
-				if( fabs(delta.x) > dist )
-					dist = fabs(delta.x);
-				if( fabs(delta.y) > dist )
-					dist = fabs(delta.y);
-				if( fabs(delta.z) > dist )
-					dist = fabs(delta.z);
-				if( dist > mp_maxtentdist.value)
-					continue;
-
-				MESSAGE_BEGIN( MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, NULL, pPlayer->edict() );
-					WRITE_BYTE( TE_ARMOR_RICOCHET );
-					WRITE_COORD( position.x );
-					WRITE_COORD( position.y );
-					WRITE_COORD( position.z );
-					WRITE_BYTE( (int)( scale * 10.0f ) );
-				MESSAGE_END();
-			}
-		}
-	}
-	else
-	{
-		MESSAGE_BEGIN( MSG_PVS, SVC_TEMPENTITY, position );
-			WRITE_BYTE( TE_ARMOR_RICOCHET );
-			WRITE_COORD( position.x );
-			WRITE_COORD( position.y );
-			WRITE_COORD( position.z );
-			WRITE_BYTE( (int)( scale * 10.0f ) );
-		MESSAGE_END();
-	}
+	MESSAGE_BEGIN( MSG_PVS, SVC_TEMPENTITY, position );
+		WRITE_BYTE( TE_ARMOR_RICOCHET );
+		WRITE_COORD( position.x );
+		WRITE_COORD( position.y );
+		WRITE_COORD( position.z );
+		WRITE_BYTE( (int)( scale * 10.0f ) );
+	MESSAGE_END();
 }
 
 BOOL UTIL_TeamsMatch( const char *pTeamName1, const char *pTeamName2 )

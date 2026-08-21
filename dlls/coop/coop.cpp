@@ -814,6 +814,9 @@ void COOP_ServerActivate( void )
 		COOP_MapStartSave();
 	memset( &g_CoopState.landmarkTransition, 0, sizeof( struct COOPLandmarkTransition ) );
 
+	CVAR_SET_FLOAT( "mp_flashlight", 1.0 );
+	CVAR_SET_FLOAT( "mp_falldamage", 1.0 );
+	CVAR_SET_FLOAT( "mp_allowmonsters", 1.0 );
 }
 
 /*
