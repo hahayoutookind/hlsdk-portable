@@ -3111,10 +3111,14 @@ void CBasePlayer::Spawn( void )
 
 	m_fNoPlayerSound = FALSE;// normal sound behavior.
 
-	m_pLastItem = 0;
-	m_fInitHUD = TRUE;
-	m_iClientHideHUD = -1;  // force this to be recalculated
-	m_fWeapon = FALSE;
+ 	m_pLastItem = 0;
+ 	m_fInitHUD = TRUE;
+ 	m_iClientHideHUD = -1;  // force this to be recalculated
+ 	m_fWeapon = FALSE;
+ 	m_fKnownItem = FALSE;	// force the WeaponList broadcast to be re-sent on every spawn
+ 							// (otherwise, when a coop player first spawns as a spectator, the
+ 						//  one-time WeaponList broadcast is consumed there and never reaches
+ 						//  the real spawned player, leaving the ammo HUD/history unpopulated)
 	m_pClientActiveItem = 0;
 	m_iClientBattery = -1;
 

@@ -72,7 +72,7 @@ struct COOPState
 
 } g_CoopState;
 
-cvar_t mp_coop = { "mp_coop", "0", FCVAR_SERVER };
+cvar_t mp_coop = { "mp_coop", "1", FCVAR_SERVER };
 cvar_t mp_coop_nofriendlyfire = { "mp_coop_nofriendlyfire", "0", FCVAR_SERVER };
 cvar_t mp_coop_reconnect_hack = { "mp_coop_reconnect_hack", "0", FCVAR_SERVER };
 cvar_t mp_coop_noangry = { "mp_coop_noangry", "0", FCVAR_SERVER };
