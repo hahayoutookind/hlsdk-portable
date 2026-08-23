@@ -1517,6 +1517,29 @@ bool GGM_PlayerSpawn( CBasePlayer *pPlayer )
 
 	if( pPlayer->m_ggm.iState == STATE_LOAD_FIX )
 		return true;
+
+	// YaPB bot support: a fake client (FL_FAKECLIENT, set by the engine before
+	// ClientConnect) cannot navigate the interactive GGM spawn menu, and the coop
+	// spawn flow hard-gates on !FL_SPECTATOR. Spawn the bot directly as a real
+	// coop player at the default coop spawn point, bypassing the menu entirely.
+	if( pPlayer->pev->flags & FL_FAKECLIENT )
+	{
+		pPlayer->pev->flags &= ~FL_SPECTATOR;
+		pPlayer->pev->effects &= ~EF_NODRAW;
+		pPlayer->pev->solid = SOLID_SLIDEBOX;
+		pPlayer->pev->movetype = MOVETYPE_WALK;
+		pPlayer->pev->takedamage = DAMAGE_YES;
+		pPlayer->m_ggm.iState = STATE_SPAWNED;
+
+		if( !GGM_RestoreState( pPlayer ) )
+			pPlayer->pev->weapons |= ( 1 << WEAPON_SUIT );
+
+		if( !COOP_SetDefaultSpawnPosition( pPlayer ) )
+			g_pGameRules->GetPlayerSpawnSpot( pPlayer );
+
+		return true;
+	}
+
 	if( pPlayer->m_ggm.iState == STATE_UNINITIALIZED )
 	{
 		ClientPutInServer( pPlayer->edict() );
