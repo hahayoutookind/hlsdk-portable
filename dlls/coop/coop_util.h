@@ -17,6 +17,7 @@ extern cvar_t materials_txt;
 
 extern bool g_fSavedDuck;
 extern bool g_fPause;
+extern bool g_fBotRespawnLoadPending;
 
 // triggers.cpp, CChangeLevel
 struct COOPChangelevelData
@@ -56,6 +57,7 @@ void COOP_AddDefaultWeapon( const char *pszClassName );
 void COOP_WriteState( const char *path );
 bool COOP_ReadState( const char *path );
 void COOP_AutoSave( CBaseEntity *pPlayer );
+bool COOP_LoadBotRespawnSave( bool fLatestAutosave );
 bool COOP_PlayerSpawn( CBasePlayer *pPlayer );
 void COOP_ClearSaves( void );
 struct COOPChangelevelData *COOP_GetTriggerData( CBaseEntity *pTrigger );

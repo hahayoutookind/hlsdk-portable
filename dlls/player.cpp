@@ -1373,6 +1373,34 @@ void CBasePlayer::PlayerDeathThink( void )
 		StartDeathCam();
 	}
 
+	if( pev->deadflag == DEAD_DEAD )
+	{
+		if( fAnyButtonDown )
+			return;
+
+		if( COOP_PlayerDeath( this ) )
+			return;
+
+		if( g_pGameRules->FPlayerCanRespawn( this ) )
+		{
+			m_fDeadTime = gpGlobals->time;
+			pev->deadflag = DEAD_RESPAWNABLE;
+		}
+
+		return;
+	}
+
+	// fake clients do not have a keyboard button to choose a checkpoint
+	if( pev->deadflag == DEAD_RESPAWNABLE && ( pev->flags & FL_FAKECLIENT ) && !g_fBotRespawnLoadPending )
+	{
+		g_fBotRespawnLoadPending = true;
+
+		if( COOP_LoadBotRespawnSave( true ) )
+			return;
+
+		g_fBotRespawnLoadPending = false;
+	}
+
 	if( pev->iuser1 )	// player is in spectator mode
 		return;
 

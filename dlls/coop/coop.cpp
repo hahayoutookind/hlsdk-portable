@@ -6,6 +6,7 @@
 #include "gravgunmod.h"
 
 bool g_fPause;
+bool g_fBotRespawnLoadPending = false;
 
 // offset for all maps relative to current map
 struct COOPMapState
@@ -317,6 +318,42 @@ void COOP_MapStartSave( void )
 	strlcpy( g_CoopState.p.rgszSaveSlots[COOP_SAVE_START2], g_CoopState.p.rgszSaveSlots[COOP_SAVE_START1], 32 );
 	strlcpy( g_CoopState.p.rgszSaveSlots[COOP_SAVE_START1], szSavename, 32 );
 	SERVER_COMMAND( UTIL_VarArgs( "wait;wait;ggm_save %s\n", g_CoopState.p.rgszSaveSlots[COOP_SAVE_START1] ) );
+}
+
+/*
+=========================
+COOP_LoadBotRespawnSave
+
+load/spawn in a autosave/map start for bots
+=========================
+*/
+bool COOP_LoadBotRespawnSave( bool fLatestAutosave )
+{
+	if( !mp_coop.value )
+		return false;
+
+	const char *pszSave = NULL;
+
+	if( fLatestAutosave )
+	{
+		pszSave = g_CoopState.p.rgszSaveSlots[COOP_SAVE_AUTO1];
+
+		// fall back to the map start
+		if( !pszSave || !pszSave[0] )
+			pszSave = g_CoopState.p.rgszSaveSlots[COOP_SAVE_START1];
+	}
+	else
+	{
+		pszSave = g_CoopState.p.rgszSaveSlots[COOP_SAVE_START1];
+	}
+
+	if( !pszSave || !pszSave[0] )
+		return false;
+
+	ALERT( at_console, "COOP: loading bot respawn save %s\n", pszSave );
+
+	GGM_Load( pszSave );
+	return true;
 }
 
 /*
@@ -817,6 +854,8 @@ void COOP_ServerActivate( void )
 	CVAR_SET_FLOAT( "mp_flashlight", 1.0 );
 	CVAR_SET_FLOAT( "mp_falldamage", 1.0 );
 	CVAR_SET_FLOAT( "mp_allowmonsters", 1.0 );
+
+	g_fBotRespawnLoadPending = false;
 }
 
 /*
