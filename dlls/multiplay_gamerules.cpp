@@ -26,9 +26,7 @@
 #include	"skill.h"
 #include	"game.h"
 #include	"items.h"
-#if !NO_VOICEGAMEMGR
 #include	"voice_gamemgr.h"
-#endif
 #include	"hltv.h"
 #include	"trains.h"
 
@@ -47,7 +45,6 @@ extern int g_teamplay;
 
 float g_flIntermissionStartTime = 0;
 
-#if !NO_VOICEGAMEMGR
 CVoiceGameMgr	g_VoiceGameMgr;
 
 class CMultiplayGameMgrHelper : public IVoiceGameMgrHelper
@@ -68,17 +65,12 @@ public:
 };
 
 static CMultiplayGameMgrHelper g_GameMgrHelper;
-#endif
-
-
 //*********************************************************
 // Rules for the half-life multiplayer game.
 //*********************************************************
 CHalfLifeMultiplay::CHalfLifeMultiplay()
 {
-#if !NO_VOICEGAMEMGR
 	g_VoiceGameMgr.Init( &g_GameMgrHelper, gpGlobals->maxClients );
-#endif
 	RefreshSkillData();
 	m_flIntermissionEndTime = 0;
 	g_flIntermissionStartTime = 0;
@@ -128,11 +120,13 @@ void UTIL_CoopProcessMenu( CBasePlayer *pPlayer, int imenu );
 
 BOOL CHalfLifeMultiplay::ClientCommand( CBasePlayer *pPlayer, const char *pcmd )
 {
-#if !NO_VOICEGAMEMGR
 	if( g_VoiceGameMgr.ClientCommand( pPlayer, pcmd ) )
 		return TRUE;
+<<<<<<< HEAD
 #endif
 
+=======
+>>>>>>> diff/master
 	return CGameRules::ClientCommand( pPlayer, pcmd );
 }
 
@@ -201,9 +195,7 @@ extern cvar_t mp_chattime;
 //=========================================================
 void CHalfLifeMultiplay::Think( void )
 {
-#if !NO_VOICEGAMEMGR
 	g_VoiceGameMgr.Update( gpGlobals->frametime );
-#endif
 
 	///// Check game rules /////
 	static int last_frags;
@@ -362,9 +354,7 @@ BOOL CHalfLifeMultiplay::GetNextBestWeapon( CBasePlayer *pPlayer, CBasePlayerIte
 //=========================================================
 BOOL CHalfLifeMultiplay::ClientConnected( edict_t *pEntity, const char *pszName, const char *pszAddress, char szRejectReason[128] )
 {
-#if !NO_VOICEGAMEMGR
 	g_VoiceGameMgr.ClientConnected( pEntity );
-#endif
 	return TRUE;
 }
 
@@ -762,6 +752,8 @@ void CHalfLifeMultiplay::DeathNotice( CBasePlayer *pVictim, entvars_t *pKiller, 
 		killer_weapon_name += 8;
 	else if( strncmp( killer_weapon_name, "func_", 5 ) == 0 )
 		killer_weapon_name += 5;
+	else if( strncmp( killer_weapon_name, "crossbow_bolt", 13 ) == 0 )
+		killer_weapon_name = "bolt";
 
 	MESSAGE_BEGIN( MSG_ALL, gmsgDeathMsg );
 		WRITE_BYTE( killer_index );						// the killer

@@ -154,6 +154,7 @@ set (SVDLL_SOURCES
 	gravgun/gravgun.cpp
         gravgun/gravgunmod.cpp
 	gravgun/unpredictedweapon.cpp	
+	../game_shared/voice_gamemgr.cpp
 	../pm_shared/pm_debug.c
 	../pm_shared/pm_math.c
 	../pm_shared/pm_shared.c
@@ -182,14 +183,6 @@ if(MSVC)
 		hl.def)
 endif()
 
-if(USE_VOICEMGR)
-	set(SVDLL_SOURCES
-		${SVDLL_SOURCES}
-		../game_shared/voice_gamemgr.cpp)
-else()
-	add_definitions(-DNO_VOICEGAMEMGR)
-endif()
-
 add_library (${SVDLL_LIBRARY} SHARED ${SVDLL_SOURCES})
 target_link_libraries(${SVDLL_LIBRARY} vcs_info)
 
@@ -208,8 +201,6 @@ endif()
 
 set_target_postfix_with_name(${SVDLL_LIBRARY} ${SVDLL_NAME})
 
-set_property(TARGET ${SVDLL_LIBRARY} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
 if(HAVE_LTO)
 	set_property(TARGET ${SVDLL_LIBRARY} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
@@ -222,7 +213,13 @@ install(TARGETS ${SVDLL_LIBRARY}
 		WORLD_READ WORLD_EXECUTE)
 
 if(CMAKE_BUILD_TYPE MATCHES "Release" AND NOT WIN32)
+	if(APPLE)
+		# Apple strip treats -s as a symbol list file, -x keeps exported symbols
+		set(STRIP_FLAGS -x)
+	else()
+		set(STRIP_FLAGS -s)
+	endif()
 	add_custom_command(TARGET ${SVDLL_LIBRARY}
 			POST_BUILD DEPENDS ${SVDLL_LIBRARY}
-			COMMAND ${CMAKE_STRIP} -s $<TARGET_FILE:${SVDLL_LIBRARY}>)
+			COMMAND ${CMAKE_STRIP} ${STRIP_FLAGS} $<TARGET_FILE:${SVDLL_LIBRARY}>)
 endif()

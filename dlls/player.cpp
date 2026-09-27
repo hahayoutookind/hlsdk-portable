@@ -1014,16 +1014,16 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 		break;
 	case PLAYER_IDLE:
 	case PLAYER_WALK:
-		if( !FBitSet( pev->flags, FL_ONGROUND ) && ( m_Activity == ACT_HOP || m_Activity == ACT_LEAP ) )	// Still jumping
-		{
-			m_IdealActivity = m_Activity;
-		}
-		else if( pev->waterlevel > 1 )
+		if( pev->waterlevel > 1 )
 		{
 			if( speed == 0 )
 				m_IdealActivity = ACT_HOVER;
 			else
 				m_IdealActivity = ACT_SWIM;
+		}
+		else if( !FBitSet( pev->flags, FL_ONGROUND ) && ( m_Activity == ACT_HOP || m_Activity == ACT_LEAP ) )	// Still jumping
+		{
+			m_IdealActivity = m_Activity;
 		}
 		else
 		{
@@ -1499,7 +1499,7 @@ void CBasePlayer::StartObserver( Vector vecPosition, Vector vecViewAngle )
 	// Clear out the status bar
 	m_fInitHUD = TRUE;
 
-	pev->team = 0;
+	m_szTeamName[0] = '\0';
 	MESSAGE_BEGIN( MSG_ALL, gmsgTeamInfo );
 		WRITE_BYTE( ENTINDEX(edict()) );
 		WRITE_STRING( "" );
@@ -3133,6 +3133,8 @@ void CBasePlayer::Spawn( void )
 
 	m_flNextChatTime = gpGlobals->time;
 	m_ggm.flSpawnTime = gpGlobals->time;
+
+	SET_VIEW(edict(), edict());
 
 	g_pGameRules->PlayerSpawn( this );
 	g_flSemclipTime = 0;
