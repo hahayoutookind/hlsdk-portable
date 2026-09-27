@@ -122,11 +122,6 @@ BOOL CHalfLifeMultiplay::ClientCommand( CBasePlayer *pPlayer, const char *pcmd )
 {
 	if( g_VoiceGameMgr.ClientCommand( pPlayer, pcmd ) )
 		return TRUE;
-<<<<<<< HEAD
-#endif
-
-=======
->>>>>>> diff/master
 	return CGameRules::ClientCommand( pPlayer, pcmd );
 }
 
